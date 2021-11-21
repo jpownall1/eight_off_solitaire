@@ -1,0 +1,344 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.4.28)  21 NOV 2021 14:33
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**report.tex
+(./report.tex
+LaTeX2e <2020-02-02> patch level 2
+L3 programming layer <2020-02-14>
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2019/12/20 v1.4l Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size11.clo
+File: size11.clo 2019/12/20 v1.4l Standard LaTeX file (size option)
+)
+\c@part=\count167
+\c@section=\count168
+\c@subsection=\count169
+\c@subsubsection=\count170
+\c@paragraph=\count171
+\c@subparagraph=\count172
+\c@figure=\count173
+\c@table=\count174
+\abovecaptionskip=\skip47
+\belowcaptionskip=\skip48
+\bibindent=\dimen134
+)
+(/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
+Package: inputenc 2018/08/11 v1.3c Input encoding file
+\inpenc@prehook=\toks14
+\inpenc@posthook=\toks15
+)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2019/11/30 v1.2a Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks16
+)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2019/11/30 v1.4a Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 105.
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen135
+\Gin@req@width=\dimen136
+)
+(/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdfmode.def
+File: l3backend-pdfmode.def 2020-02-03 L3 backend support: PDF mode
+\l__kernel_color_stack_int=\count175
+\l__pdf_internal_box=\box45
+)
+No file report.aux.
+\openout1 = `report.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count176
+\scratchdimen=\dimen137
+\scratchbox=\box46
+\nofMPsegments=\count177
+\nofMParguments=\count178
+\everyMPshowfont=\toks17
+\MPscratchCnt=\count179
+\MPscratchDim=\dimen138
+\MPnumerator=\count180
+\makeMPintoPDFobject=\count181
+\everyMPtoPDFconversion=\toks18
+) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/usr/share/texlive/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <17.28> on input line 20.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 20.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 20.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 20.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 20.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 20.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+l.20 \maketitle
+               
+? 
+! Extra }, or forgotten $.
+\@footnotetext ...rut \strutbox }\color@endgroup }
+                                                  
+l.20 \maketitle
+               
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+l.20 \maketitle
+               
+? 
+! Missing } inserted.
+<inserted text> 
+                }
+l.20 \maketitle
+               
+? report
+OK, entering \nonstopmode...
+
+Overfull \hbox (7.13795pt too wide) in paragraph at lines 26--26
+[]\OT1/cmr/bx/n/14.4 Solving The Ram-blers Prob-lem us-ing my Branch-
+ []
+
+! Misplaced alignment tab character &.
+l.30 Branch-and-Bound (B&
+                         B) works by finding all of the possible paths from ...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.30 ...o increase efficiency.\\To implement my B&
+                                                  B algorithm I made the fol...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+[1
+
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+<RamblersSearchBB.png, id=16, 434.62375pt x 294.09875pt>
+File: RamblersSearchBB.png Graphic file (type png)
+<use RamblersSearchBB.png>
+Package pdftex.def Info: RamblersSearchBB.png  used on input line 37.
+(pdftex.def)             Requested size: 130.38812pt x 88.2303pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 45--46
+
+ []
+
+<RamblersStateBB2.png, id=18, 695.59875pt x 675.52374pt>
+File: RamblersStateBB2.png Graphic file (type png)
+<use RamblersStateBB2.png>
+Package pdftex.def Info: RamblersStateBB2.png  used on input line 49.
+(pdftex.def)             Requested size: 208.68123pt x 202.65868pt.
+[2 <./RamblersSearchBB.png>]
+<RamblersStateBB.png, id=24, 546.04pt x 563.10374pt>
+File: RamblersStateBB.png Graphic file (type png)
+<use RamblersStateBB.png>
+Package pdftex.def Info: RamblersStateBB.png  used on input line 60.
+(pdftex.def)             Requested size: 163.81326pt x 168.93242pt.
+ [3 <./RamblersStateBB2.png> <./RamblersStateBB.png>]
+<RunRamblersBB.png, id=30, 576.1525pt x 228.855pt>
+File: RunRamblersBB.png Graphic file (type png)
+<use RunRamblersBB.png>
+Package pdftex.def Info: RunRamblersBB.png  used on input line 73.
+(pdftex.def)             Requested size: 172.84708pt x 68.65701pt.
+
+! Misplaced alignment tab character &.
+l.80 ...0)) to the col (coordinates (5,8)), the B&
+                                                  B search completes within ...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+<cli.png, id=31, 898.35625pt x 256.96pt>
+File: cli.png Graphic file (type png)
+<use cli.png>
+Package pdftex.def Info: cli.png  used on input line 85.
+(pdftex.def)             Requested size: 359.33614pt x 102.78217pt.
+! Misplaced alignment tab character &.
+<argument> ... : \ignorespaces The results from B&
+                                                  B search from C(7,0) to C(...
+l.86 ...lts from B&B search from C(7,0) to C(5,8)}
+                                                  
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+[4 <./RunRamblersBB.png> <./cli.png>]
+! Misplaced alignment tab character &.
+l.99 ...ifference between an A* algorithm and a B&
+                                                  B algorithm is that A* is ...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.99 ...lgorithm is that A* is a combination of B&
+                                                  B and another algorithm ca...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+<RamblersStateA.png, id=37, 597.23125pt x 189.70876pt>
+File: RamblersStateA.png Graphic file (type png)
+<use RamblersStateA.png>
+Package pdftex.def Info: RamblersStateA.png  used on input line 115.
+(pdftex.def)             Requested size: 179.17075pt x 56.91306pt.
+<RamblersStateA2.png, id=38, 604.2575pt x 101.37875pt>
+File: RamblersStateA2.png Graphic file (type png)
+<use RamblersStateA2.png>
+Package pdftex.def Info: RamblersStateA2.png  used on input line 122.
+(pdftex.def)             Requested size: 181.27864pt x 30.41385pt.
+<RunRamblersA.png, id=39, 607.26875pt x 222.8325pt>
+File: RunRamblersA.png Graphic file (type png)
+<use RunRamblersA.png>
+Package pdftex.def Info: RunRamblersA.png  used on input line 134.
+(pdftex.def)             Requested size: 182.18202pt x 66.85027pt.
+[5] [6 <./RamblersStateA.png> <./RamblersStateA2.png> <./RunRamblersA.png>]
+<cli2.png, id=49, 448.67625pt x 450.68375pt>
+File: cli2.png Graphic file (type png)
+<use cli2.png>
+Package pdftex.def Info: cli2.png  used on input line 147.
+(pdftex.def)             Requested size: 179.46732pt x 180.2703pt.
+
+[7 <./cli2.png>]
+! Misplaced alignment tab character &.
+<argument> Comparison of A* and B&
+                                  B 
+l.158 \section{Comparison of A* and B&B }
+                                         
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 164.
+
+Overfull \hbox (89.91177pt too wide) in paragraph at lines 164--197
+ [][] 
+ []
+
+[8]
+! Misplaced alignment tab character &.
+l.203 ...therefore has a higher efficiency than B&
+                                                  B. In only two cases was t...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.203 ...cy than B&B. In only two cases was the B&
+                                                  B algorithm equal to the A...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+! Misplaced alignment tab character &.
+l.203 ...ill gives a better efficiency than the B&
+                                                  B however, as it explores ...
+I can't figure out why you would want to use a tab mark
+here. If you just want an ampersand, the remedy is
+simple: Just type `I\&' now. But if some right brace
+up above has ended a previous alignment prematurely,
+you're probably due for more error messages, and you
+might try typing `S' now just to see what is salvageable.
+
+[9] (./report.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 1260 strings out of 483183
+ 18746 string characters out of 5966292
+ 256255 words of memory out of 5000000
+ 16298 multiletter control sequences out of 15000+600000
+ 539713 words of font info for 48 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 30i,7n,25p,1232b,214s stack positions out of 5000i,500n,10000p,200000b,80000s
+ </home/jpizzle/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm0600.6
+00pk> </home/jpizzle/.texlive2019/texmf-var/fonts/pk/ljfour/jknappen/ec/tcrm120
+0.600pk></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pf
+b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share
+/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texliv
+e/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/f
+onts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmr9.pfb></usr/share/texlive/texmf-dist/fonts/type1/publ
+ic/amsfonts/cm/cmsy9.pfb>
+Output written on report.pdf (9 pages, 414334 bytes).
+PDF statistics:
+ 99 PDF objects out of 1000 (max. 8388607)
+ 58 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 46 words of extra memory for PDF output out of 10000 (max. 10000000)
+

@@ -1,0 +1,209 @@
+% ---------------------------- %
+% Assignment Report
+% 
+% Jordan Pownall
+% --------------------------   %
+
+
+\documentclass[11pt,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+
+
+\title{Experimental report for the University of Sheffield COM2108 Assignment: Solitaire\footnote{https://gitlab.com/jord_pownall/com2108-assignment}}
+\author{Jordan Pownall}
+\date{\today}
+
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+There are many variations of the card game “Solitaire”, some using a single pack of 52 cards, others using two packs, and more obscure variants using different sets of cards. 
+This paper discusses using different algorithms to play Solitaire using the functional programming language Haskell.
+
+In this assignment I will be using 2 different algorithms to find the optimal route for the Rambler and testing each algorithms efficiency in doing so and whether they can be adapted to perform better.
+
+
+\section{Part 1}
+
+\subsection{8-Off Solitaire}
+
+In this section of the paper I will be demonstrating the basic code implementation of 8-Off Solitaire. This includes the definition of neccessary datatypes and some functionality.
+
+\subsubsection{RamblersSearch}
+A class that inherits methods from the Search class. \\This class is for detecting and drawing what map is being used, and what the goal state is. 
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RamblersSearchBB.png}
+  \caption{The RamblersSearch code}
+  \label{fig:RamblersSearchBB}
+\end{figure}
+
+This is done by implementing an object of RamblersSearch with the parameters being the goal and the map. These parameters can then be called using the methods getGoal and getMap in the other classes to find out what the goal and map is.
+
+\subsubsection{RamblersState}
+A class that inherits methods from the SearchState class. \\The purpose of this class is to find the successor states and also to test if the current coordinates are equal to the goal state. The RamblersState class is the most important of the 3 classes. \\
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RamblersStateBB2.png}
+  \caption{The RamblersState tester methods}
+  \label{fig:RamblersStateBB2}
+\end{figure}
+
+\pagebreak
+
+These are methods in the RamblersState class that can do numerous operations for the certain states, meaning checking if it is equal to another state or if it is a goal, and retrieving its coordinates and its cost to another node. The getLocalCost is neccessary for the calculation of the route in the getSuccessors.
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RamblersStateBB.png}
+  \caption{The RamblersState getSuccessors method}
+  \label{fig:RamblersStateBB}
+\end{figure}
+
+The most important part of this class is where it finds the successer nodes, by finding out if the node is at a boundary (the edge of a map), finding where it can go from there. If the current node is at a boundary, for example west, it will only find nodes to the north, south and east and create a list to be returned from these nodes (to be added to the open list). Otherwise, if not at a boundary, it will submit to the open list nodes from all directions. 
+
+\subsubsection{RunRamblersBB}
+
+BB meaning Branch and Bound, this class is what uses both the RamblersSearch and RamblersState together to make a map traversal algorithm.
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RunRamblersBB.png}
+  \caption{The RunRamblersBB code}
+  \label{fig:RunRamblersBB}
+\end{figure}
+
+\subsection{The Results}
+
+When running the algorithm from the car park (coordinates (7,0)) to the col (coordinates (5,8)), the B&B search completes within 80 iterations with the following results:
+
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.4]{cli.png}
+  \caption{The results from B&B search from C(7,0) to C(5,8)}
+  \label{fig:cli}
+\end{figure}
+
+\subsection{Assessing the efficiency of my branch-and-bound search algorithm}
+
+The figure for efficiency, as shown, is 0.1375. This is quite low which means this algorithm is not very good for finding the best route quickly. This may be because there is nothing for the search to indicate which of the successor nodes may be the next to explore, so explores them at random.
+
+
+\section{Solving Ramblers Problem using my A* implementation}
+
+\subsection{Overall A* implementation}
+
+The difference between an A* algorithm and a B&B algorithm is that A* is a combination of B&B and another algorithm called Best First (better known as Greedy). This means that A* takes into account heuristics, which are estimates of the global cost from the current node to the goal node. It then finds out which of the next open nodes to select by finding which one has the lowest figure for the estimated remaining cost. I have used two different calculations for the estimated remaining cost, these are: 
+
+
+\begin{enumerate}
+  \item The absolute height difference to the goal node from the successor nodes.
+  \item The estimated closeness to the goal node, better known as the 'as the crow flys' method (so not taking into account the change in altitude).
+\end{enumerate}
+
+This gives the following changes to the above implemented classes:
+
+\subsubsection{RamblersState}
+
+Very similar to Figure 2, there is now an added constructor for the RamblersState being the estimatedRemainingCost method that calculates the heurustics from the successor states to the goal state. Figures 6 and 7 show the two different methods used to calculate the estimatedRemainingCost. 
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RamblersStateA.png}
+  \caption{estimatedRemainingCost method for absolute height difference}
+  \label{fig:RamblersStateA}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RamblersStateA2.png}
+  \caption{estimatedRemainingCost method for goal closeness}
+  \label{fig:RamblersStateA2}
+\end{figure}
+
+The acquired figure is then used in the Search class to select the next node from the successer node list that has the lowest estimated remaining cost.
+
+\subsubsection{RunRamblersA}
+
+A meaning A*, this class uses both the RamblersSearch and the updated RamblersState together to make a map traversal algorithm. The initialisation of the algorithm now has the added parameter of the initial ramblers state with a 0 estimated global cost.
+\begin{figure}[!ht]
+\centering
+  \includegraphics[scale=0.3]{RunRamblersA.png}
+  \caption{The RunRamblersA code}
+  \label{fig:RunRamblersA}
+\end{figure}
+
+\pagebreak
+
+\subsection{The Results}
+
+When running the algorithm, from the car park (coordinates (7,0)) to the goal (coordinates (5,8)), the A* search completes within 54 iterations (height difference) and 78 iterations (closeness) with the following results:
+
+\begin{figure}[ht]
+\centering
+  \includegraphics[scale=0.4]{cli2.png}
+  \caption{The results from A* search from C(7,0) to C(5,8) using height difference}
+  \label{fig:cli2}
+\end{figure}
+
+\subsection{Assessing the efficiency of my A* search algorithm}
+
+As shown in figure 9, the A* search completes the route in 10 moves. The figure for efficiency using absolute height difference, as shown, is 0.2037037. When using the closeness heuristic, the efficiency is 0.14102565. This suggests height difference is a better heuristic than closeness.
+
+\pagebreak
+
+\section{Comparison of A* and B&B }
+
+Table 1 (shown below) shows the statistics of each of my implemented algorithms with different start points. It shows the start nodes with the corresponding iterations and efficiency of each algorithm.
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+        Search Type & Starting Node & Iterations & Efficiency & Which is the most efficient?  \\ \hline
+        Branch and Bound & (1,0)         & 151        & 0.08609272 & A* (HD)                  \\
+        A* (height diff) &               & 55         & 0.23636363 &                          \\
+        A* (closeness)   &               & 140        & 0.09285714 &                          \\
+        Branch and Bound & (1,5)         & 136        & 0.05882353 & A* (HD)                  \\
+        A* (height diff) &               & 52         & 0.15384616 &                          \\
+        A* (closeness)   &               & 108        & 0.07407407 &                          \\
+        Branch and Bound & (14,10)       & 175        & 0.10285714 & A* (HD)                  \\
+        A* (height diff) &               & 141        & 0.12765957 &                          \\
+        A* (closeness)   &               & 165        & 0.10909091 &                          \\
+        Branch and Bound & (0,10)        & 144        & 0.09722224 & A* (HD)                  \\
+        A* (height diff) &               & 55         & 0.23454545 &                          \\
+        A* (closeness)   &               & 137        & 0.10218978 &                          \\
+        Branch and Bound & (4,8)         & 2          & 1.00000000 & BB/A*                    \\
+        A* (height diff) &               & 2          & 1.00000000 &                          \\
+        A* (closeness)   &               & 2          & 1.00000000 &                          \\
+        Branch and Bound & (5,0)         & 79         & 0.11392405 & A* (HD)                  \\
+        A* (height diff) &               & 54         & 0.16666667 &                          \\
+        A* (closeness)   &               & 78         & 0.11538461 &                          \\
+        Branch and Bound & (3,8)         & 9          & 0.33333334 & A* (C)                   \\
+        A* (height diff) &               & 7          & 0.42857143 &                          \\
+        A* (closeness)   &               & 3          & 1.00000000 &                          \\
+        Branch and Bound & (5,7)         & 10         & 0.20000000 & A* (HD)                  \\
+        A* (height diff) &               & 2          & 1.00000000 &                          \\
+        A* (closeness)   &               & 8          & 0.25000000 &                          \\
+        Branch and Bound & (6,8)         & 2          & 1.00000000 & BB/A*                    \\
+        A* (height diff) &               & 2          & 1.00000000 &                          \\
+        A* (closeness)   &               & 2          & 1.00000000 &                          \\
+        Branch and Bound & (5,9)         & 56         & 0.03571429 & A* (HD)                  \\
+        A* (height diff) &               & 2          & 1.00000000 &                          \\
+        A* (closeness)   &               & 40         & 0.05000000 &                          \\
+    \end{tabular}
+    \caption{Table showing stats for each algorithm from different start nodes to goal node C(5,8)}
+    \label{tab:my_label}
+\end{table}
+
+\section{Conclusions}
+
+According to my results gathered, it is shown that in every scenario, the A* algorithms take less iterations and therefore has a higher efficiency than B&B. In only two cases was the B&B algorithm equal to the A*, and that was when the starter coordinates were one place north or west from the destination.\\This may be because the A* algorithm uses heuristics and therefore is able to gather more information about each successor nodes distance to the final destination, giving indication to whether these nodes are worth exploring, and therefore gains better initial maximum costs. This eliminates many different unneccesary routes, resulting in a much more efficient algorithm.\\For assessing which heuristic is better for this problem, it seems the height difference is better to use than the closeness - this is because the cost is the elevation and not the total distance travelled. The closeness tests the routes that appear closer first but does not take into account the change in altitude between the points, therefore is unsuitable for the Ramblers Problem. This still gives a better efficiency than the B&B however, as it explores closer routes first instead of routes in the opposite direction of the goal.
+
+\end{document}

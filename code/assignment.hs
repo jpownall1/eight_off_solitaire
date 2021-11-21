@@ -7,6 +7,8 @@ import Debug.Trace
     Jordan Pownall, November 2021
 -}
 
+--------------------------------------------------------------------------PART 1----------------------------------------------------------------------------------------------------------------------
+
 --Step 1: Define Initial Datatypes
 data Suit = Hearts | Clubs | Spades | Diamonds deriving (Eq, Ord, Show, Enum)
 
@@ -95,10 +97,10 @@ eOBoardShow (foundation, column, reserve) =
     ++  "Columns: " ++ show column
     ++ "Reserve: " ++ show reserve
 
--- moves cards possible cards from tableau to foundation 
+-- moves cards possible cards from tableau and reserve to foundation 
 toFoundations :: EOBoard -> EOBoard
 toFoundations board@(foundation, column, reserve)
-    | any (toFoundationsHelper foundation) (getHeads column ++ reserve) = toFoundations newBoard --checks if any of the cards at the head of column and reserve meet helper, if so move card
+    | canMoveToFoundations board = toFoundations newBoard --checks if can move, if so moves the card
     | otherwise = board     --otherwise do nothing
     where
         newBoard = foldr (moveAceFoundations) board (getHeads column ++ reserve)
@@ -107,6 +109,10 @@ toFoundations board@(foundation, column, reserve)
 -- checks if the card can move (essentially if it is an Ace or if its predecessor of the head of a list in foundations)
 toFoundationsHelper :: [Deck] -> Card -> Bool
 toFoundationsHelper foundation c = isAce c || elem (pCard c) (map head foundation)
+
+-- checks if any cards at the head of column and reserve meet helper i.e. can be moved to foundations or not
+canMoveToFoundations :: EOBoard -> Bool
+canMoveToFoundations board@(foundation, column, reserve) = any (toFoundationsHelper foundation) (getHeads column ++ reserve)
 
 -- finds heads from each list to evaluate
 getHeads :: [Deck] -> Deck
@@ -137,7 +143,10 @@ moveCardFoundations c board@(x:xs, column, reserve)
     where
         (newFound, newColumn, newReserve) = moveCardFoundations c (xs, column, reserve)
 
-{-
+--Need to do implementation of spider solitaire
+
+--------------------------------------------------------------------------PART 2----------------------------------------------------------------------------------------------------------------------
+
 -- checks if a card can be moved to the reserves
 canMoveToReserves :: EOBoard -> Bool
 canMoveToReserves (_,_,reserves)
@@ -162,9 +171,32 @@ canMoveToColumn (_,column,_)
 
 -- moves a card to the tableau and deletes it from the reserves
 moveCardToColumn :: Card -> EOBoard -> EOBoard
+moveCardToColumn c board@(foundation, [], reserve) = (foundation, [[c]], reserve)
 moveCardToColumn c board@(foundation, x:xs, reserve)
     | head x == sCard c = (foundation, ((c:x):xs), delete c reserve) -- checks if head of a column is the sCard of c, if so add c
-    | otherwise = (newFound, (x:newColumn), newReserve)    -- calls recursively if the sCard is not found at the head of that column
+    | otherwise = (newFound, (x:newColumn), newReserve)              -- calls recursively if the sCard is not found at the head of that column
     where
         (newFound, newColumn, newReserve) = moveCardToColumn c (foundation, xs, reserve)
--}
+
+-- the next two methods use the previous methods to build a list of boards to 
+difReservesMoves :: EOBoard -> [EOBoard]
+difReservesMoves board@(foundation, [], reserve) = []
+difReservesMoves board@(foundation, x:xs, reserve)
+    | canMoveToReserves board = (moveCardToReserves (head x) board) : difReservesMoves (foundation, x:newColumn, reserve)
+    | otherwise = difReservesMoves (newFound, x:newColumn, newReserve)
+    where
+        (newFound, newColumn, newReserve) = (foundation, xs, reserve)
+
+difColumnsMoves :: EOBoard -> [EOBoard]
+difColumnsMoves board@(foundation, column, []) = []
+difColumnsMoves board@(foundation, column, x:xs)
+    | canMoveToColumn board = (moveCardToColumn x board) : difColumnsMoves (foundation, column, x:xs)
+    | otherwise = difReservesMoves (foundation, column, x:newReserve)
+    where
+        (newFound, newColumn, newReserve) = (foundation, column, xs)
+
+findMoves :: EOBoard -> [EOBoard]
+findMoves board@(foundation, column, reserve) = difReservesMoves board ++ difColumnsMoves board ++ [toFoundations board]
+
+
+
