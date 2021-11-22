@@ -58,11 +58,11 @@ isAce x = snd x == Ace                 --checks for second item in card tuple, u
 --shuffles cards
 cmp (x1,y1) (x2,y2) = compare y1 y2
 shuffle :: Int -> Deck
-shuffle n = [card | (card,n) <- sortBy cmp (zip pack ((randoms (mkStdGen n)) :: [Int]))]
+shuffle n = [card | (card,n) <- sortBy cmp (zip pack (randoms (mkStdGen n) :: [Int]))]
 
 --Step 3: Define datatypes to represent an eight-off board
 
-type Foundation = [Deck] 
+type Foundation = [Deck]
 
 type Column = [Deck]
 
@@ -86,12 +86,12 @@ eODeal n = (foundation, column, reserve) where
 splitUp :: Deck -> [Deck]
 splitUp [] = []
 splitUp deck
-    | length deck < 6 = []                                                                      
-    | otherwise = (take 6 deck):(splitUp (drop 6 deck)) -- recursively calls to split up deck into 6 every time until empty set
+    | length deck < 6 = []
+    | otherwise = take 6 deck:splitUp (drop 6 deck) -- recursively calls to split up deck into 6 every time until empty set
 
 
 -- shows the board
-eOBoardShow :: EOBoard -> String 
+eOBoardShow :: EOBoard -> String
 eOBoardShow (foundation, column, reserve) =
     "Foundations: " ++ show foundation
     ++  "Columns: " ++ show column
@@ -103,8 +103,8 @@ toFoundations board@(foundation, column, reserve)
     | canMoveToFoundations board = toFoundations newBoard --checks if can move, if so moves the card
     | otherwise = board     --otherwise do nothing
     where
-        newBoard = foldr (moveAceFoundations) board (getHeads column ++ reserve)
-    
+        newBoard = foldr moveAceFoundations board (getHeads column ++ reserve)
+
 
 -- checks if the card can move (essentially if it is an Ace or if its predecessor of the head of a list in foundations)
 toFoundationsHelper :: [Deck] -> Card -> Bool
@@ -116,8 +116,7 @@ canMoveToFoundations board@(foundation, column, reserve) = any (toFoundationsHel
 
 -- finds heads from each list to evaluate
 getHeads :: [Deck] -> Deck
-getHeads [] = []
-getHeads (x:xs) = head x : getHeads xs
+getHeads xs = map head xs
 
 -- removes the card from a stack if it is found at the head of any of the lists
 removeHead :: Card -> [Deck] -> [Deck]
@@ -130,7 +129,7 @@ removeHead c (x:xs)
 -- the tableau columns, if so adds to the foundation and removes it from its current position
 moveAceFoundations :: Card -> EOBoard -> EOBoard
 moveAceFoundations c board@(foundation, column, reserve)
-    | isAce c = (([c]:foundation), removeHead c column, delete c reserve)   --if the card is an ace it is added to foundations (empty list)
+    | isAce c = ([c]:foundation, removeHead c column, delete c reserve)   --if the card is an ace it is added to foundations (empty list)
     | otherwise = moveCardFoundations c board         --this way the function can be called every time in case theres an ace, if not will check for rest of cards
 
 -- this function checks if the card (c) is present in any of the reserves or if it is the head of
@@ -138,8 +137,8 @@ moveAceFoundations c board@(foundation, column, reserve)
 moveCardFoundations :: Card -> EOBoard -> EOBoard
 moveCardFoundations c ([], column, reserve) = ([], column, reserve)
 moveCardFoundations c board@(x:xs, column, reserve)
-    | head x == pCard c = (((c:x):xs), removeHead c column, delete c reserve) -- checks if head of each foundation is the pCard of c
-    | otherwise = ((x:newFound), newColumn, newReserve)    -- calls recursively if the card is not found to be able to move from current column
+    | head x == pCard c = ((c:x):xs, removeHead c column, delete c reserve) -- checks if head of each foundation is the pCard of c
+    | otherwise = (x:newFound, newColumn, newReserve)    -- calls recursively if the card is not found to be able to move from current column
     where
         (newFound, newColumn, newReserve) = moveCardFoundations c (xs, column, reserve)
 
@@ -149,7 +148,7 @@ moveCardFoundations c board@(x:xs, column, reserve)
 
 -- checks if a card can be moved to the reserves
 canMoveToReserves :: EOBoard -> Bool
-canMoveToReserves (_,_,reserves)
+canMoveToReserves board@(_,_,reserves)
     | length reserves < 8 = True        -- if the length of the reserves list is less than 8, a card can be added
     | otherwise = False
 
@@ -162,32 +161,31 @@ moveCardToReserves c board@(foundation, column, reserve)
 --cards that can move from the column to the reserve
 getColumnMovables :: EOBoard -> [Card]
 getColumnMovables board@(_,[],_) = []
-getColumnMovables board@(foundation,(x:xs),reserve)
+getColumnMovables board@(foundation,x:xs,reserve)
     | canMoveToColumn board = head x : getColumnMovables (foundation, xs, reserve)
     | otherwise = []
 
 -- this method finds the EOBoard array from possible moves to the reserves
 difReservesMoves :: EOBoard -> [EOBoard]
 difReservesMoves board@(foundation, [], reserve) = []
-difReservesMoves board@(foundation, [], reserve)
-    | canMoveToReserves = filter (not . null) boards
+difReservesMoves board@(foundation, column, reserve)
+    | canMoveToReserves board = removeItem board boards
     | otherwise = []
     where
         movables = getColumnMovables board
-        boards = 
-            [(if length movables < 2 then moveCardToReserves movables!!0 else []),
-                (if length movables < 2 then moveCardToReserves movables!!1 else []),
-                    (if length movables < 2 then moveCardToReserves movables!!2 else []),
-                        (if length movables < 2 then moveCardToReserves movables!!3 else []),
-                            (if length movables < 2 then moveCardToReserves movables!!4 else []),
-                                (if length movables < 2 then moveCardToReserves movables!!5 else []),
-                                    (if length movables < 2 then moveCardToReserves movables!!6 else []),
-                                        (if length movables < 2 then moveCardToReserves movables!!7 else [])]
-
+        boards =
+            [if length movables < 2 then moveCardToReserves (movables!!0) board else board,
+                if length movables < 3 then moveCardToReserves (movables!!1) board else board,
+                    if length movables < 4 then moveCardToReserves (movables!!2) board else board,
+                        if length movables < 5 then moveCardToReserves (movables!!3) board else board,
+                            if length movables < 6 then moveCardToReserves (movables!!4) board else board,
+                                if length movables < 7 then moveCardToReserves (movables!!5) board else board,
+                                    if length movables < 8 then moveCardToReserves (movables!!6) board else board,
+                                        if length movables < 9 then moveCardToReserves (movables!!7) board else board]
 
 -- checks if a successor card is the head of any of the lists in the tableau
 toColumnsHelper :: [Deck] -> Card -> Bool
-toColumnsHelper column c = elem (sCard c) (map head column)
+toColumnsHelper column c = (sCard c) `elem` (map head column)
 
 -- checks if a card can be moved to the tableau
 canMoveToColumn :: EOBoard -> Bool
@@ -199,29 +197,62 @@ canMoveToColumn (_,column,_)
 moveCardToColumn :: Card -> EOBoard -> EOBoard
 moveCardToColumn c board@(foundation, [], reserve) = (foundation, [[c]], reserve)
 moveCardToColumn c board@(foundation, x:xs, reserve)
-    | head x == sCard c = (foundation, ((c:x):xs), delete c reserve) -- checks if head of a column is the sCard of c, if so add c
-    | otherwise = (newFound, (x:newColumn), newReserve)              -- calls recursively if the sCard is not found at the head of that column
+    | head x == sCard c = (foundation, (c:x):xs, delete c reserve) -- checks if head of a column is the sCard of c, if so add c
+    | otherwise = (newFound, x:newColumn, newReserve)              -- calls recursively if the sCard is not found at the head of that column
     where
         (newFound, newColumn, newReserve) = moveCardToColumn c (foundation, xs, reserve)
 
--- cards that can move from the reserve to a column
-getReserveMovables :: EOBoard -> [Card]
-getReserveMovables board@(_,_,[]) = []
-    | canMoveToReserves board = 
-
-{-
--- the next two methods use the previous methods to build a list of boards to use in findMoves 
-
--}
-
-difColumnsMoves :: EOBoard -> [EOBoard]
-difColumnsMoves board@(foundation, column, []) = []
-difColumnsMoves board@(foundation, column, x:xs)
-    | canMoveToColumn board = (moveCardToColumn x board) : difColumnsMoves (foundation, column, x:newReserve)
+-- returns cards that can move from the reserve to a column
+getReserveMovablesMayb :: Eq a => EOBoard -> [Maybe a]
+getReserveMovablesMayb board@(_,_,[]) = []
+getReserveMovablesMayb board@(foundation,column,reserves)
+    | canMoveToColumn board = removeItem Nothing movables
     | otherwise = []
     where
-        (newFound, newColumn, newReserve) = moveCardToColumn (head xs) (foundation, column, xs)
+        columnHeads = getHeads column
+        moveables =
+            [if (length reserves) < 2 and (toColumnsHelper column (reserves!!0)) then Just (reserves!!0) else Nothing,
+                if (length reserves) < 3 and (toColumnsHelper column (reserves!!1)) then Just (reserves!!0) else Nothing,
+                    if (length reserves) < 4 and (toColumnsHelper column (reserves!!2)) then Just (reserves!!0) else Nothing,
+                        if (length reserves) < 5 and (toColumnsHelper column (reserves!!3)) then Just (reserves!!0) else Nothing,
+                            if (length reserves) < 6 and (toColumnsHelper column (reserves!!4)) then Just (reserves!!0) else Nothing,
+                                if (length reserves) < 7 and (toColumnsHelper column (reserves!!5)) then Just (reserves!!0) else Nothing,
+                                    if (length reserves) < 8 and (toColumnsHelper column (reserves!!6)) then Just (reserves!!0) else Nothing,
+                                        if (length reserves) < 9 and (toColumnsHelper column (reserves!!7)) then Just (reserves!!0) else Nothing]
 
+movables :: [Maybe a]
+movables = error "not implemented"
+
+fromJust :: Maybe a -> a
+fromJust (Just a) = a
+fromJust Nothing = error "Still nothings in your array."
+
+getReserveMovables :: EOBoard -> [Card]
+getReserveMovables board = map fromJust (getReserveMovablesMayb board)
+
+
+-- this method finds the EOBoard array from possible moves to the reserves
+difColumnMoves :: EOBoard -> [EOBoard]
+difColumnMoves board@(foundation, [], reserve) = []
+difColumnMoves board@(foundation, column, reserve)
+    | canMoveToReserves board = removeItem board boards
+    | otherwise = []
+    where
+        movables = getReserveMovables board
+        boards =
+            [if length movables < 2 then moveCardToColumn (movables!!0) board else board,
+                if length movables < 3 then moveCardToColumn (movables!!1) board else board,
+                    if length movables < 4 then moveCardToColumn (movables!!2) board else board,
+                        if length movables < 5 then moveCardToColumn (movables!!3) board else board,
+                            if length movables < 6 then moveCardToColumn (movables!!4) board else board,
+                                if length movables < 7 then moveCardToColumn (movables!!5) board else board,
+                                    if length movables < 8 then moveCardToColumn (movables!!6) board else board,
+                                        if length movables < 9 then moveCardToColumn (movables!!7) board else board]
+
+removeItem :: Eq a => a -> [a] -> [a]
+removeItem _ []                 = []
+removeItem x (y:ys) | x == y    = removeItem x ys
+                    | otherwise = y : removeItem x ys
 
 findMoves :: EOBoard -> [EOBoard]
-findMoves board@(foundation, column, reserve) = difReservesMoves board ++ difColumnsMoves board ++ [toFoundations board]
+findMoves board@(foundation, column, reserve) = difReservesMoves board ++ difColumnMoves board ++ [toFoundations board]
