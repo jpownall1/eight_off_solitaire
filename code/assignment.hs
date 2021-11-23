@@ -252,10 +252,13 @@ difColumnMoves board@(foundation, column, reserve)
                                     if length movables < 8 then moveCardToColumn (movables!!6) board else board,
                                         if length movables < 9 then moveCardToColumn (movables!!7) board else board]
 
+--This method is for the partial filtering in the getReserveMovableMayb function, removing the nothings
 removeItem :: Eq a => a -> [a] -> [a]
 removeItem _ []                 = []
 removeItem x (y:ys) | x == y    = removeItem x ys
                     | otherwise = y : removeItem x ys
 
+-- This method finds all the possible moves in the game, with toFoundations called on each of the boards as instructed.
 findMoves :: EOBoard -> [EOBoard]
-findMoves board@(foundation, column, reserve) = difReservesMoves board ++ difColumnMoves board ++ [toFoundations board]
+findMoves board@(foundation, column, reserve) = map toFoundations (difReservesMoves board ++ difColumnMoves board ++ [board])
+
