@@ -211,22 +211,25 @@ getReserveMovablesMayb board@(foundation,column,reserves)
     where
         columnHeads = getHeads column
         moveables =
-            [if (length reserves) < 2 and (toColumnsHelper column (reserves!!0)) then Just (reserves!!0) else Nothing,
-                if (length reserves) < 3 and (toColumnsHelper column (reserves!!1)) then Just (reserves!!0) else Nothing,
-                    if (length reserves) < 4 and (toColumnsHelper column (reserves!!2)) then Just (reserves!!0) else Nothing,
-                        if (length reserves) < 5 and (toColumnsHelper column (reserves!!3)) then Just (reserves!!0) else Nothing,
-                            if (length reserves) < 6 and (toColumnsHelper column (reserves!!4)) then Just (reserves!!0) else Nothing,
-                                if (length reserves) < 7 and (toColumnsHelper column (reserves!!5)) then Just (reserves!!0) else Nothing,
-                                    if (length reserves) < 8 and (toColumnsHelper column (reserves!!6)) then Just (reserves!!0) else Nothing,
-                                        if (length reserves) < 9 and (toColumnsHelper column (reserves!!7)) then Just (reserves!!0) else Nothing]
+            [if (length reserves) < 2 && (toColumnsHelper column (reserves!!0)) then Just (reserves!!0) else Nothing,
+                if (length reserves) < 3 && (toColumnsHelper column (reserves!!1)) then Just (reserves!!1) else Nothing,
+                    if (length reserves) < 4 && (toColumnsHelper column (reserves!!2)) then Just (reserves!!2) else Nothing,
+                        if (length reserves) < 5 && (toColumnsHelper column (reserves!!3)) then Just (reserves!!3) else Nothing,
+                            if (length reserves) < 6 && (toColumnsHelper column (reserves!!4)) then Just (reserves!!4) else Nothing,
+                                if (length reserves) < 7 && (toColumnsHelper column (reserves!!5)) then Just (reserves!!5) else Nothing,
+                                    if (length reserves) < 8 && (toColumnsHelper column (reserves!!6)) then Just (reserves!!6) else Nothing,
+                                        if (length reserves) < 9 && (toColumnsHelper column (reserves!!7)) then Just (reserves!!7) else Nothing]
 
+-- had to define this method for the above method to work
 movables :: [Maybe a]
 movables = error "not implemented"
 
+-- defined this function to be used in the next function as a way to retrieve the cards what can move from the reserves to tableau
 fromJust :: Maybe a -> a
 fromJust (Just a) = a
 fromJust Nothing = error "Still nothings in your array."
 
+-- retrieves the cards from Just a to a
 getReserveMovables :: EOBoard -> [Card]
 getReserveMovables board = map fromJust (getReserveMovablesMayb board)
 
