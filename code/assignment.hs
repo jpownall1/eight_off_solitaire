@@ -101,7 +101,7 @@ eOBoardShow (foundation, column, reserve) =
 toFoundations :: EOBoard -> EOBoard
 toFoundations board@(foundation, column, reserve)
     | canMoveToFoundations board = toFoundations newBoard --checks if can move, if so moves the card
-    | otherwise = board     --otherwise do nothing
+    | otherwise = board                                   --otherwise do nothing
     where
         newBoard = foldr moveAceFoundations board (getHeads column ++ reserve)
 
@@ -145,7 +145,7 @@ moveCardFoundations c board@(x:xs, column, reserve)
 --Need to do implementation of spider solitaire
 
 --------------------------------------------------------------------------PART 2----------------------------------------------------------------------------------------------------------------------
-
+--------------------------------------------------------------------------Step 1----------------------------------------------------------------------------------------------------------------------
 -- checks if a card can be moved to the reserves
 canMoveToReserves :: EOBoard -> Bool
 canMoveToReserves board@(_,_,reserves)
@@ -202,7 +202,7 @@ moveCardToColumn c board@(foundation, x:xs, reserve)
     where
         (newFound, newColumn, newReserve) = moveCardToColumn c (foundation, xs, reserve)
 
--- returns cards that can move from the reserve to a column
+-- returns cards that can move from the reserve to the tableau
 getReserveMovablesMayb :: Eq a => EOBoard -> [Maybe a]
 getReserveMovablesMayb board@(_,_,[]) = []
 getReserveMovablesMayb board@(foundation,column,reserves)
@@ -234,7 +234,7 @@ getReserveMovables :: EOBoard -> [Card]
 getReserveMovables board = map fromJust (getReserveMovablesMayb board)
 
 
--- this method finds the EOBoard array from possible moves to the reserves
+-- this method finds the EOBoard array from possible moves from columns to the reserves
 difColumnMoves :: EOBoard -> [EOBoard]
 difColumnMoves board@(foundation, [], reserve) = []
 difColumnMoves board@(foundation, column, reserve)
@@ -260,5 +260,32 @@ removeItem x (y:ys) | x == y    = removeItem x ys
 
 -- This method finds all the possible moves in the game, with toFoundations called on each of the boards as instructed.
 findMoves :: EOBoard -> [EOBoard]
-findMoves board@(foundation, column, reserve) = map toFoundations (difReservesMoves board ++ difColumnMoves board ++ [board])
+findMoves board@(foundation, column, reserve)  
+    | removeItem board (map toFoundations (difReservesMoves board ++ difColumnMoves board ++ [board])) == [] = []
+    | otherwise = map toFoundations (difReservesMoves board ++ difColumnMoves board ++ [board])
 
+--------------------------------------------------------------------------Step 2----------------------------------------------------------------------------------------------------------------------
+--I have chosen to choose which move based on which one has the biggest number of cards in foundations.
+
+-- finds the amount of cards in foundations for a given board
+foundationSize :: EOBoard -> Int 
+foundationSize board@([],_,_) = 0
+foundationSize board@(x:xs,foundation,reserve) = length x + foundationSize (xs,foundation,reserve)
+
+-- finds the board with the biggest bumber of cards in foundations
+foundationBiggest :: [EOBoard] -> EOBoard
+foundationBiggest = foldr1 (\x y -> if foundationSize x >= foundationSize y then x else y)
+
+--This method chooses the move 
+chooseMove :: EOBoard -> Maybe EOBoard
+chooseMove board@(foundation, column, reserve)
+    | findMoves board == [] = Nothing
+    | otherwise = Just biggestFoundation
+    where
+        biggestFoundation = foundationBiggest (findMoves board)
+
+--------------------------------------------------------------------------Step 3----------------------------------------------------------------------------------------------------------------------
+haveWon :: EOBoard -> Bool
+haveWon board@(foundation, column, reserve)
+    | column == [] && reserve == [] = True 
+    | otherwise = False 
