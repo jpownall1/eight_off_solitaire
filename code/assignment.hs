@@ -286,3 +286,13 @@ haveWon :: Board -> Bool
 haveWon (EOBoard board@(foundation, column, reserve))
     | column == [] && reserve == [] = True 
     | otherwise = False 
+
+maxColumnCount :: [Board] -> Int 
+maxColumnCount ((EOBoard board@(foundation,_,_)):xs) = sum sublist_lengths
+    where sublist_lengths = map length foundation
+
+--This function takes an initial Board as its argument and uses chooseMove to play the game to
+--completion. The return value is the score, which is calculated by how many cards have been moved to
+--the foundations – a successful game, in which all cards are moved to the foundations, will score 52.
+playSolitaire :: Board -> Int
+playSolitaire (EOBoard board@(foundation, column, reserve)) = findMoves (EOBoard board) 
