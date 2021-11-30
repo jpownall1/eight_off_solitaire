@@ -3,6 +3,7 @@ import Data.List
 import System.Random
 import Data.Ord
 import Debug.Trace
+import Data.Maybe
 {-
     Assignment for COM2108 Functional Programming
     Jordan Pownall, November 2021
@@ -74,8 +75,8 @@ type Reserve = [Card]
 data Board = EOBoard (Foundation, Column, Reserve) | SBoard (Foundation, Column, Stock) deriving (Eq)
 
 instance Show Board where
-    show (EOBoard (foundation, column, reserve)) = "Foundations: " ++ show foundation ++  "Columns: " ++ show column ++ "Reserve: " ++ show reserve
-    show (SBoard (foundation, column, stock)) = "Foundations: " ++ show foundation ++  "Columns: " ++ show column ++ "Stock: " ++ show stock
+    show (EOBoard (foundation, column, reserve)) = "Foundations: " ++ "\n" ++ show foundation ++ "\n" ++ "Columns: " ++ "\n" ++ show column ++ "\n" ++ "Reserve: " ++ "\n" ++ show reserve ++ "\n"
+    show (SBoard (foundation, column, stock)) = "Foundations: " ++ "\n" ++ show foundation ++ "\n" ++  "Columns: " ++ "\n" ++ show column ++ "\n" ++ "Stock: " ++ "\n" ++ show stock ++ "\n"
 
 ----------------------------------------------------------------Step 4: Implement further functionality-----------------------------------------------------------------------------------------------
 -- function to initially split the deck into cells (reserve) (should start with 4 random cards in 8 cells), 
@@ -143,6 +144,7 @@ moveCardFoundations c (EOBoard board@(x:xs, column, reserve))
 
 --------------------------------------------------------------------------PART 2----------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------Step 1: A FUNCTION TO FIND ALL POSSIBLE MOVES FOR EIGHT-OFF -----------------------------------------------------------------------------------
+-- This part uses functions to find the possible moves from the columns (tableau) to the reserves 
 -- checks if a card can be moved to the reserves
 canMoveToReserves :: Board -> Bool
 canMoveToReserves (EOBoard board@(_,_,reserves))
@@ -155,13 +157,6 @@ moveCardToReserves c (EOBoard board@(foundation, column, reserve))
     | canMoveToReserves (EOBoard board) = EOBoard(foundation, removeHead c column, c:reserve)   -- updates board with deleted card from tableau and adds to reserve
     | otherwise = EOBoard board
 
---cards that can move from the column to the reserve
-getColumnMovables :: Board -> [Card]
-getColumnMovables (EOBoard board@(_,[],_)) = []
-getColumnMovables (EOBoard board@(foundation,x:xs,reserve))
-    | canMoveToColumn (EOBoard board) = head x : getColumnMovables (EOBoard (foundation, xs, reserve))
-    | otherwise = []
-
 -- this method finds the Board array from possible moves to the reserves
 difReservesMoves :: Board -> [Board]
 difReservesMoves (EOBoard board@(foundation, [], reserve)) = []
@@ -169,17 +164,9 @@ difReservesMoves (EOBoard board@(foundation, column, reserve))
     | canMoveToReserves (EOBoard board) = removeItem (EOBoard board) boards
     | otherwise = []
     where
-        movables = getColumnMovables (EOBoard board)
-        boards =
-            [if length movables < 2 then moveCardToReserves (movables!!0) (EOBoard board) else (EOBoard board),
-                if length movables < 3 then moveCardToReserves (movables!!1) (EOBoard board) else (EOBoard board),
-                    if length movables < 4 then moveCardToReserves (movables!!2) (EOBoard board) else (EOBoard board),
-                        if length movables < 5 then moveCardToReserves (movables!!3) (EOBoard board) else (EOBoard board),
-                            if length movables < 6 then moveCardToReserves (movables!!4) (EOBoard board) else (EOBoard board),
-                                if length movables < 7 then moveCardToReserves (movables!!5) (EOBoard board) else (EOBoard board),
-                                    if length movables < 8 then moveCardToReserves (movables!!6) (EOBoard board) else (EOBoard board),
-                                        if length movables < 9 then moveCardToReserves (movables!!7) (EOBoard board) else (EOBoard board)]
+        boards = map (\x -> moveCardToReserves x (EOBoard board)) (getHeads column)
 
+-- This part uses functions to find the possible moves from the reserves  to the columns (tableau)
 -- checks if a successor card is the head of any of the lists in the tableau
 toColumnsHelper :: [Deck] -> Card -> Bool
 toColumnsHelper column c = (sCard c) `elem` (map head column)
@@ -198,37 +185,9 @@ moveCardToColumn c (EOBoard board@(foundation, x:xs, reserve))
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)              -- calls recursively if the sCard is not found at the head of that column
     where
         EOBoard (newFound, newColumn, newReserve) = moveCardToColumn c (EOBoard (foundation, xs, reserve))
-
--- returns cards that can move from the reserve to the tableau
-getReserveMovablesMayb :: Eq a => Board -> [Maybe a]
-getReserveMovablesMayb (EOBoard board@(_,_,[])) = []
-getReserveMovablesMayb (EOBoard board@(foundation,column,reserves))
-    | canMoveToColumn (EOBoard board) = removeItem Nothing movables
-    | otherwise = []
-    where
-        columnHeads = getHeads column
-        moveables =
-            [if (length reserves) < 2 && (toColumnsHelper column (reserves!!0)) then Just (reserves!!0) else Nothing,
-                if (length reserves) < 3 && (toColumnsHelper column (reserves!!1)) then Just (reserves!!1) else Nothing,
-                    if (length reserves) < 4 && (toColumnsHelper column (reserves!!2)) then Just (reserves!!2) else Nothing,
-                        if (length reserves) < 5 && (toColumnsHelper column (reserves!!3)) then Just (reserves!!3) else Nothing,
-                            if (length reserves) < 6 && (toColumnsHelper column (reserves!!4)) then Just (reserves!!4) else Nothing,
-                                if (length reserves) < 7 && (toColumnsHelper column (reserves!!5)) then Just (reserves!!5) else Nothing,
-                                    if (length reserves) < 8 && (toColumnsHelper column (reserves!!6)) then Just (reserves!!6) else Nothing,
-                                        if (length reserves) < 9 && (toColumnsHelper column (reserves!!7)) then Just (reserves!!7) else Nothing]
-
 -- had to define this method for the above method to work
 movables :: [Maybe a]
 movables = error "not implemented"
-
--- defined this function to be used in the next function as a way to retrieve the cards what can move from the reserves to tableau
-fromJust :: Maybe a -> a
-fromJust (Just a) = a
-fromJust Nothing = error "Still nothings in your array."
-
--- retrieves the cards from Just a to a
-getReserveMovables :: Board -> [Card]
-getReserveMovables (EOBoard board) = map fromJust (getReserveMovablesMayb (EOBoard board))
 
 
 -- this method finds the Board array from possible moves from columns to the reserves
@@ -238,16 +197,7 @@ difColumnMoves (EOBoard board@(foundation, column, reserve))
     | canMoveToReserves (EOBoard board) = removeItem (EOBoard board) boards
     | otherwise = []
     where
-        movables = getReserveMovables (EOBoard board)
-        boards =
-            [if length movables < 2 then moveCardToColumn (movables!!0) (EOBoard board) else (EOBoard board),
-                if length movables < 3 then moveCardToColumn (movables!!1) (EOBoard board) else (EOBoard board),
-                    if length movables < 4 then moveCardToColumn (movables!!2) (EOBoard board) else (EOBoard board),
-                        if length movables < 5 then moveCardToColumn (movables!!3) (EOBoard board) else (EOBoard board),
-                            if length movables < 6 then moveCardToColumn (movables!!4) (EOBoard board) else (EOBoard board),
-                                if length movables < 7 then moveCardToColumn (movables!!5) (EOBoard board) else (EOBoard board),
-                                    if length movables < 8 then moveCardToColumn (movables!!6) (EOBoard board) else (EOBoard board),
-                                        if length movables < 9 then moveCardToColumn (movables!!7) (EOBoard board) else (EOBoard board)]
+        boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
 
 --This method is for filtering, used in many functions
 removeItem :: Eq a => a -> [a] -> [a]
@@ -312,7 +262,7 @@ studentUsername = "acb19jp"
 
 initialBoardDefined = eODeal 12345    {- replace XXX with the name of the constant that you defined
                                                                 in step 3 of part 1 -}
-secondBoardDefined = SBoard (Foundation, Column, Stock) {- replace YYY with the constant defined in step 5 of part 1,
+{-secondBoardDefined = SBoard (Foundation, Column, Stock)  replace YYY with the constant defined in step 5 of part 1,
                             or if you have chosen to demonstrate play in a different game
                             of solitaire for part 2, a suitable contstant that will show
                             your play to good effect for that game -}
@@ -341,50 +291,51 @@ main =
         putStrLn "***The result of calling toFoundations on that board:"
         print board
 
-    {- Move the start comment marker below to the appropriate position.
-    If you have completed ALL the tasks for the assignment, you can
-    remove the comments from the main function entirely.
-    DO NOT try to submit/run non-functional code - you will receive 0 marks
-    for ALL your code if you do, even if *some* of your code is correct.
+        {- Move the start comment marker below to the appropriate position.
+        If you have completed ALL the tasks for the assignment, you can
+        remove the comments from the main function entirely.
+        DO NOT try to submit/run non-functional code - you will receive 0 marks
+        for ALL your code if you do, even if *some* of your code is correct.
+        -}
+
+        
+
+        let boards = findMoves board      -- show that findMoves is working
+        putStrLn "***The possible next moves after that:"
+        print boards
+        {- start comment marker - move this if appropriate
+        let chosen = chooseMove board     -- show that chooseMove is working
+        putStrLn "***The chosen move from that set:"
+        print chosen
+
+        putStrLn "***Now showing a full game"     -- display a full game
+        score <- displayGame initialBoardDefined 0
+        putStrLn $ "Score: " ++ score
+        putStrLn $ "and if I'd used playSolitaire, I would get score: " ++ show (playSolitaire initialBoardDefined)
+
+
+        putStrLn "\n\n\n************\nNow looking at the alternative game:"
+
+        putStrLn "***The spider initial board constant from part 1 (or equivalent if playing a different game of solitaire):"
+        print secondBoardDefined          -- show the suitable constant. For spider solitaire this
+                                        -- is not an initial game, but a point from which the game
+                                        -- can be won
+
+        putStrLn "***Now showing a full game for alternative solitaire"
+        score <- displayGame secondBoardDefined 0 -- see what happens when we play that game (assumes chooseMove
+                                                -- works correctly)
+        putStrLn $ "Score: " ++ score
+        putStrLn $ "and if I'd used playSolitaire, I would get score: " ++ show (playSolitaire secondBoardDefined)
+
+        -}
+
+    {- displayGame takes a Board and move number (should initially be 0) and
+        displays the game step-by-step (board-by-board). The result *should* be
+        the same as performing playSolitaire on the initial board, if it has been
+        implemented correctly.
+        DO NOT CHANGE THIS CODE other than aligning indentation with your own.
     -}
 
-    {- start comment marker - move this if appropriate
-
-    let boards = findMoves board      -- show that findMoves is working
-    putStrLn "***The possible next moves after that:"
-    print boards
-
-    let chosen = chooseMove board     -- show that chooseMove is working
-    putStrLn "***The chosen move from that set:"
-    print chosen
-
-    putStrLn "***Now showing a full game"     -- display a full game
-    score <- displayGame initialBoardDefined 0
-    putStrLn $ "Score: " ++ score
-    putStrLn $ "and if I'd used playSolitaire, I would get score: " ++ show (playSolitaire initialBoardDefined)
-
-
-    putStrLn "\n\n\n************\nNow looking at the alternative game:"
-
-    putStrLn "***The spider initial board constant from part 1 (or equivalent if playing a different game of solitaire):"
-    print secondBoardDefined          -- show the suitable constant. For spider solitaire this
-                                    -- is not an initial game, but a point from which the game
-                                    -- can be won
-
-    putStrLn "***Now showing a full game for alternative solitaire"
-    score <- displayGame secondBoardDefined 0 -- see what happens when we play that game (assumes chooseMove
-                                            -- works correctly)
-    putStrLn $ "Score: " ++ score
-    putStrLn $ "and if I'd used playSolitaire, I would get score: " ++ show (playSolitaire secondBoardDefined)
-
-    -}
-
-{- displayGame takes a Board and move number (should initially be 0) and
-    displays the game step-by-step (board-by-board). The result *should* be
-    the same as performing playSolitaire on the initial board, if it has been
-    implemented correctly.
-    DO NOT CHANGE THIS CODE other than aligning indentation with your own.
--}
 displayGame :: Board -> Int ->IO String
 displayGame board n =
     if haveWon board
