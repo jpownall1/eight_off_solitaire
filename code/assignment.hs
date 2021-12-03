@@ -101,43 +101,50 @@ splitUp deck
 toFoundations :: Board -> Board
 toFoundations (EOBoard board@(foundation, column, reserve))
     | canMoveToFoundations (EOBoard board) = toFoundations newBoard --checks if can move, if so moves the card
-    | otherwise = (EOBoard board)                                   --otherwise do nothing
+    | otherwise = EOBoard board                                     --otherwise do nothing
     where
-        newBoard = foldr moveAceFoundations (EOBoard board) (getHeads column ++ reserve)
+        newBoard = foldr moveAceFoundations (EOBoard board) ((getHeads column) ++ reserve)
 
 
 -- checks if the card can move (essentially if it is an Ace or if its predecessor of the head of a list in foundations)
 toFoundationsHelper :: [Deck] -> Card -> Bool
-toFoundationsHelper foundation c = isAce c || elem (pCard c) (map head foundation)
+toFoundationsHelper foundation c = isAce c || elem (pCard c) (getHeads foundation)
 
 -- checks if any cards at the head of column and reserve meet helper i.e. can be moved to foundations or not
 canMoveToFoundations :: Board -> Bool
+canMoveToFoundations (EOBoard board@(foundation, [], [])) = False
+canMoveToFoundations (EOBoard board@(foundation, column, [])) = any (toFoundationsHelper foundation) (getHeads column)
+canMoveToFoundations (EOBoard board@(foundation, [], reserve)) = any (toFoundationsHelper foundation) (reserve)
 canMoveToFoundations (EOBoard board@(foundation, column, reserve)) = any (toFoundationsHelper foundation) (getHeads column ++ reserve)
 
 -- finds heads from each list to evaluate
 getHeads :: [Deck] -> Deck
-getHeads xs = map head xs
+getHeads [] = []
+getHeads (x:xs)
+    | x == [] = getHeads xs
+    | otherwise = head x : getHeads xs
 
 -- removes the card from a stack if it is found at the head of any of the lists
 removeHead :: Card -> [Deck] -> [Deck]
 removeHead c [] = []
+removeHead c [a] = []
 removeHead c (x:xs)
-    | c == head x = delete c x:xs                 -- if c is at the head of this list, delete
+    | c == head x = removeItem c x : xs                    -- if c is at the head of this list, delete
     | otherwise = x:removeHead c xs               -- if not, repeat process for rest of the list until found
 
 -- this function checks if the ace card (c) is present in any of the reserves or if it is the head of
 -- the tableau columns, if so adds to the foundation and removes it from its current position
 moveAceFoundations :: Card -> Board -> Board
 moveAceFoundations c (EOBoard board@(foundation, column, reserve))
-    | isAce c = EOBoard ([c]:foundation, removeHead c column, delete c reserve)   --if the card is an ace it is added to foundations (empty list)
+    | isAce c = EOBoard ([c]:foundation, removeHead c column, removeItem c reserve)   --if the card is an ace it is added to foundations (empty list)
     | otherwise = moveCardFoundations c (EOBoard board)         --this way the function can be called every time in case theres an ace, if not will check for rest of cards
 
 -- this function checks if the card (c) is present in any of the reserves or if it is the head of
 -- the tableau columns, if so adds to the foundation it belongs to and removes it from its current position
 moveCardFoundations :: Card -> Board -> Board
-moveCardFoundations c (EOBoard ([], column, reserve)) = (EOBoard ([], column, reserve))
+moveCardFoundations c (EOBoard ([], column, reserve)) = EOBoard ([], column, reserve)
 moveCardFoundations c (EOBoard board@(x:xs, column, reserve))
-    | head x == pCard c = EOBoard ((c:x):xs, removeHead c column, delete c reserve) -- checks if head of each foundation is the pCard of c
+    | head x == pCard c = EOBoard ((c:x):xs, removeHead c column, removeItem c reserve) -- checks if head of each foundation is the pCard of c
     | otherwise = EOBoard (x:newFound, newColumn, newReserve)    -- calls recursively if the card is not found to be able to move from current column
     where
         (EOBoard (newFound, newColumn, newReserve)) = moveCardFoundations c (EOBoard (xs, column, reserve))
@@ -159,7 +166,7 @@ moveCardToReserves c (EOBoard board@(foundation, column, reserve))
 
 -- this method finds the Board array from possible moves to the reserves
 difReservesMoves :: Board -> [Board]
-difReservesMoves (EOBoard board@(foundation, [], reserve)) = []
+difReservesMoves (EOBoard board@(foundation, [], reserve)) = [toFoundations (EOBoard board)]
 difReservesMoves (EOBoard board@(foundation, column, reserve))
     | canMoveToReserves (EOBoard board) = removeItem (EOBoard board) boards
     | otherwise = []
@@ -169,7 +176,7 @@ difReservesMoves (EOBoard board@(foundation, column, reserve))
 -- This part uses functions to find the possible moves from the reserves  to the columns (tableau)
 -- checks if a successor card is the head of any of the lists in the tableau
 toColumnsHelper :: [Deck] -> Card -> Bool
-toColumnsHelper column c = (sCard c) `elem` (map head column)
+toColumnsHelper column c = (sCard c) `elem` (getHeads column)
 
 -- checks if a card can be moved to the tableau
 canMoveToColumn :: Board -> Bool
@@ -179,16 +186,12 @@ canMoveToColumn (EOBoard (_,column,_))
 
 -- moves a card to the tableau and deletes it from the reserves
 moveCardToColumn :: Card -> Board -> Board
-moveCardToColumn c (EOBoard board@(foundation, [], reserve)) = EOBoard (foundation, [[c]], reserve)
+moveCardToColumn c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just move to new row
 moveCardToColumn c (EOBoard board@(foundation, x:xs, reserve))
-    | head x == sCard c = EOBoard (foundation, (c:x):xs, delete c reserve) -- checks if head of a column is the sCard of c, if so add c
+    | head x == sCard c = EOBoard (foundation, (c:x):xs, removeItem c reserve) -- checks if head of a column is the sCard of c, if so add c
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)              -- calls recursively if the sCard is not found at the head of that column
     where
         EOBoard (newFound, newColumn, newReserve) = moveCardToColumn c (EOBoard (foundation, xs, reserve))
--- had to define this method for the above method to work
-movables :: [Maybe a]
-movables = error "not implemented"
-
 
 -- this method finds the Board array from possible moves from columns to the reserves
 difColumnMoves :: Board -> [Board]
@@ -205,17 +208,18 @@ removeItem _ []                 = []
 removeItem x (y:ys) | x == y    = removeItem x ys
                     | otherwise = y : removeItem x ys
 
+--This part is the combination of the two
 -- This method finds all the possible moves in the game, with toFoundations called on each of the boards as instructed.
 findMoves :: Board -> [Board]
 findMoves (EOBoard board@(foundation,column,reserves))
-    | removeItem (EOBoard board) (map toFoundations (difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ [(EOBoard board)])) == [] = []
-    | otherwise = map toFoundations (difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ [(EOBoard board)])
+    | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))) == [] = []
+    | otherwise = removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board)))
 
 ---------------------------------------------------------------Step 2: A FUNCTION TO CHOOSE THE NEXT MOVE---------------------------------------------------------------------------------------------
 --I have chosen to choose which move based on which one has the biggest number of cards in foundations.
 
 -- finds the amount of cards in foundations for a given board
-foundationSize :: Board -> Int 
+foundationSize :: Board -> Int
 foundationSize (EOBoard board@([],_,_)) = 0
 foundationSize (EOBoard board@(x:xs,column,reserve)) = length x + foundationSize (EOBoard (xs,column,reserve))
 
@@ -223,30 +227,38 @@ foundationSize (EOBoard board@(x:xs,column,reserve)) = length x + foundationSize
 foundationBiggest :: [Board] -> Board
 foundationBiggest = foldr1 (\x y -> if foundationSize x >= foundationSize y then x else y)
 
+-- finds the amount of cards in foundations for a given board
+reserveSize :: Board -> Int
+reserveSize (EOBoard board@(_,_,[])) = 0
+reserveSize (EOBoard board@(foundation,column,reserve)) = length reserve
+
+reserveSmallest :: [Board] -> Board
+reserveSmallest = foldr1 (\x y -> if reserveSize x <= reserveSize y then x else y)
+
+combined :: [Board] -> Board
+combined = foldr1 (\x y -> if (foundationSize x - reserveSize x) >= (foundationSize y - reserveSize y) then x else y)
+
 --This method chooses the move 
 chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
     | findMoves (EOBoard board) == [] = Nothing
-    | otherwise = Just biggestFoundation
+    | otherwise = Just toChoose
     where
-        biggestFoundation = foundationBiggest (findMoves (EOBoard board))
+        toChoose = combined (findMoves (EOBoard board))
 
 -------------------------------------------------------Step 3: A FUNCTION TO PLAY A GAME OF EIGHT-OFF SOLITAIRE---------------------------------------------------------------------------------------
 haveWon :: Board -> Bool
 haveWon (EOBoard board@(foundation, column, reserve))
-    | column == [] && reserve == [] = True 
-    | otherwise = False 
-
-maxColumnCount :: [Board] -> Int 
-maxColumnCount ((EOBoard board@(foundation,_,_)):xs) = sum sublist_lengths
-    where sublist_lengths = map length foundation
+    | column == [] && reserve == [] = True
+    | otherwise = False
 
 --This function takes an initial Board as its argument and uses chooseMove to play the game to
 --completion. The return value is the score, which is calculated by how many cards have been moved to
 --the foundations – a successful game, in which all cards are moved to the foundations, will score 52.
 playSolitaire :: Board -> Int
 playSolitaire (EOBoard board@(foundation, column, reserve))
-    | findMoves (EOBoard board) == [] = foundationSize (EOBoard board)
+    | haveWon (EOBoard board) = 52
+    | chooseMove (EOBoard board) == Nothing = foundationSize (EOBoard board)
     | otherwise = playSolitaire (fromJust (chooseMove (EOBoard board)))
 
 ---------------------------------------------------------------------template.hs----------------------------------------------------------------------------------------------------------------------
@@ -298,12 +310,12 @@ main =
         for ALL your code if you do, even if *some* of your code is correct.
         -}
 
-        
+
 
         let boards = findMoves board      -- show that findMoves is working
         putStrLn "***The possible next moves after that:"
         print boards
-        {- start comment marker - move this if appropriate
+
         let chosen = chooseMove board     -- show that chooseMove is working
         putStrLn "***The chosen move from that set:"
         print chosen
@@ -312,7 +324,7 @@ main =
         score <- displayGame initialBoardDefined 0
         putStrLn $ "Score: " ++ score
         putStrLn $ "and if I'd used playSolitaire, I would get score: " ++ show (playSolitaire initialBoardDefined)
-
+{- start comment marker - move this if appropriate
 
         putStrLn "\n\n\n************\nNow looking at the alternative game:"
 
