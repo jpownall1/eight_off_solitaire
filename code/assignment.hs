@@ -59,8 +59,12 @@ isAce x = snd x == Ace                 --checks for second item in card tuple, u
 
 --shuffles cards
 cmp (x1,y1) (x2,y2) = compare y1 y2
+
 shuffle :: Int -> Deck
 shuffle n = [card | (card,n) <- sortBy cmp (zip pack (randoms (mkStdGen n) :: [Int]))]
+
+shuffleBoards :: Int -> [Board] -> [Board]
+shuffleBoards n boards = [board | (board,n) <- sortBy cmp (zip boards (randoms (mkStdGen n) :: [Int]))]
 
 --------------------------------------------------------Step 3: Define datatypes to represent an eight-off board--------------------------------------------------------------------------------------
 -----------------------------------------------------STEP 5: DEFINE DATATYPES TO REPRESENT A FOUR SUIT SPIDER BOARD-----------------------------------------------------------------------------------
@@ -180,16 +184,17 @@ toColumnsHelper column c = (sCard c) `elem` (getHeads column)
 
 -- checks if a card can be moved to the tableau
 canMoveToColumn :: Board -> Bool
-canMoveToColumn (EOBoard (_,column,_))
-    | any (toColumnsHelper column) (getHeads column) = True
+canMoveToColumn (EOBoard (_,column,reserve))
+    | any (toColumnsHelper column) reserve = True
     | otherwise = False
 
 -- moves a card to the tableau and deletes it from the reserves
 moveCardToColumn :: Card -> Board -> Board
-moveCardToColumn c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just move to new row
+moveCardToColumn c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as you should be able to move all cards to column then
 moveCardToColumn c (EOBoard board@(foundation, x:xs, reserve))
     | head x == sCard c = EOBoard (foundation, (c:x):xs, removeItem c reserve) -- checks if head of a column is the sCard of c, if so add c
-    | otherwise = EOBoard (newFound, x:newColumn, newReserve)              -- calls recursively if the sCard is not found at the head of that column
+    | x == [] = EOBoard (foundation, (c:x):xs, removeItem c reserve)           -- checks if head of a column is empty, if so add c
+    | otherwise = EOBoard (newFound, x:newColumn, newReserve)                  -- calls recursively if the sCard is not found at the head of that column
     where
         EOBoard (newFound, newColumn, newReserve) = moveCardToColumn c (EOBoard (foundation, xs, reserve))
 
@@ -197,7 +202,7 @@ moveCardToColumn c (EOBoard board@(foundation, x:xs, reserve))
 difColumnMoves :: Board -> [Board]
 difColumnMoves (EOBoard board@(foundation, [], reserve)) = []
 difColumnMoves (EOBoard board@(foundation, column, reserve))
-    | canMoveToReserves (EOBoard board) = removeItem (EOBoard board) boards
+    | canMoveToColumn (EOBoard board) = removeItem (EOBoard board) boards
     | otherwise = []
     where
         boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
@@ -208,12 +213,14 @@ removeItem _ []                 = []
 removeItem x (y:ys) | x == y    = removeItem x ys
                     | otherwise = y : removeItem x ys
 
---This part is the combination of the two
--- This method finds all the possible moves in the game, with toFoundations called on each of the boards as instructed.
+-- This part is the combination of the difColumnMoves and difReservesMoves. 
+-- This method finds all the possible moves in the game, with toFoundations called on each of the boards as instructed,
+-- if there are no more moves returns an empty set, otherwise shuffles the boards and returns that
+-- shuffleBoard is used to stop the same card switching back and forth with a column
 findMoves :: Board -> [Board]
 findMoves (EOBoard board@(foundation,column,reserves))
     | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))) == [] = []
-    | otherwise = removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board)))
+    | otherwise = shuffleBoards 1234 (removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))))
 
 ---------------------------------------------------------------Step 2: A FUNCTION TO CHOOSE THE NEXT MOVE---------------------------------------------------------------------------------------------
 --I have chosen to choose which move based on which one has the biggest number of cards in foundations.
@@ -232,13 +239,15 @@ reserveSize :: Board -> Int
 reserveSize (EOBoard board@(_,_,[])) = 0
 reserveSize (EOBoard board@(foundation,column,reserve)) = length reserve
 
+-- Finds the board with the smallest number of cards in reserves
 reserveSmallest :: [Board] -> Board
 reserveSmallest = foldr1 (\x y -> if reserveSize x <= reserveSize y then x else y)
 
+-- Chooses which board by finding the board what has the biggest foundation with the smallest reserve
 combined :: [Board] -> Board
 combined = foldr1 (\x y -> if (foundationSize x - reserveSize x) >= (foundationSize y - reserveSize y) then x else y)
 
---This method chooses the move 
+--This method chooses the move dependant on the above method
 chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
     | findMoves (EOBoard board) == [] = Nothing
