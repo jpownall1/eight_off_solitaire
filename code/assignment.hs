@@ -275,6 +275,51 @@ difColumnMoves (EOBoard board@(foundation, column, reserve))
         boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
         moreBoards = map (\x -> moveCardToEmptyColumn x (EOBoard board)) reserve
 
+-- This part is for cards moving from a column to a different column
+-- This returns the king at a head of a column that arent already in their own column
+getKingsAtColumnHead :: [Deck] -> Deck
+getKingsAtColumnHead [] = []
+getKingsAtColumnHead (x:xs)
+    | x == [] = getKingsAtColumnHead xs
+    | (length x > 1) && isKing (head x) = [head x] ++ getKingsAtColumnHead xs
+    | otherwise = getKingsAtColumnHead xs
+
+-- This method is for moving a card from a column to a different column
+colToColKingMove :: Card -> Board -> Board
+colToColKingMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
+colToColKingMove c (EOBoard board@(foundation, x:xs, reserve))
+    | x == [] = EOBoard (foundation, x : removeHead c (x:xs), reserve)           -- checks if head of a column is empty, if so add king and delete from head of column
+    | otherwise = EOBoard (newFound, x:newColumn, newReserve)                  -- calls recursively until no more columns
+    where
+        EOBoard (newFound, newColumn, newReserve) = colToColKingMove c (EOBoard (foundation, xs, reserve))
+
+-- This method is for moving a card from a column to a different column
+colToColMove :: Card -> Board -> Board
+colToColMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
+colToColMove c (EOBoard board@(foundation, x:xs, reserve))
+    | x == [] = EOBoard (newFound, x:newColumn, newReserve) 
+    | (length x > 1) && toColumnsHelper (x:xs) c && head x == sCard c = EOBoard (foundation, x : removeHead c (x:xs), reserve)-- checks if head of a column is second card, if so add king and delete from head of column
+    | otherwise = EOBoard (newFound, x:newColumn, newReserve)                              -- calls recursively until no more columns
+    where
+        EOBoard (newFound, newColumn, newReserve) = colToColKingMove c (EOBoard (foundation, xs, reserve))
+
+-- Checks if column to column moves can be made
+canMoveColtoCol :: Board -> Bool 
+canMoveColtoCol (EOBoard board@(_,column,reserve))= any isKing (getHeads column) && emptyColumn column && any (toColumnsHelper column) (getHeads column)
+
+-- this method moves a king to an empty column
+difColtoColMoves :: Board -> [Board]
+difColtoColMoves (EOBoard board@(foundation, [], reserve)) = []
+difColtoColMoves (EOBoard board@(foundation, y:ys, reserve))
+    | canMoveColtoCol (EOBoard board) = removeItem (EOBoard board) (kingsToEmpty ++ otherMoves)
+    | any isKing (getHeads (y:ys)) && emptyColumn (y:ys) = removeItem (EOBoard board) kingsToEmpty
+    | any (toColumnsHelper (y:ys)) (getHeads (y:ys)) = removeItem (EOBoard board) otherMoves
+    | otherwise = []
+    where
+        kingCards = getKingsAtColumnHead (y:ys)
+        kingsToEmpty = map (\x -> colToColKingMove x (EOBoard board)) kingCards
+        otherMoves = map (\x -> colToColMove x (EOBoard board)) (getHeads (y:ys))
+
 --This method is for filtering, used in many functions
 removeItem :: Eq a => a -> [a] -> [a]
 removeItem _ []                 = []
@@ -287,8 +332,8 @@ removeItem x (y:ys) | x == y    = removeItem x ys
 -- shuffleBoard is used to stop the same card switching back and forth with a column
 findMoves :: Board -> [Board]
 findMoves (EOBoard board@(foundation,column,reserves))
-    | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))) == [] = []
-    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board)))
+    | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difColtoColMoves (EOBoard board) ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))) == [] = []
+    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difColtoColMoves (EOBoard board) ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board)))
 
 ---------------------------------------------------------------Step 2: A FUNCTION TO CHOOSE THE NEXT MOVE---------------------------------------------------------------------------------------------
 --I have chosen to choose which move based on which one has the biggest number of cards in foundations.
@@ -337,6 +382,7 @@ moveForSecondCard (EOBoard board@(foundation,x:xs,reserve))
 chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
     | findMoves (EOBoard board) == [] = Nothing
+    | canMoveColtoCol (EOBoard board) =  Just (head (difColtoColMoves (EOBoard board)))
     | canSecondCardMove (EOBoard board) && canMoveToReserves (EOBoard board) = Just (moveForSecondCard (EOBoard board))
     | canMoveToColumn (EOBoard board) && not (emptyColumn column) = Just bestOnlyToColumn
     | length reserve == 8 = Nothing                               --had to put in this line to stop the endless recursion... impacts score on working decks though :(
