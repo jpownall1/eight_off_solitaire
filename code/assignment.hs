@@ -1,9 +1,11 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE TemplateHaskell #-}
 import Data.List
 import System.Random
 import Data.Ord
 import Debug.Trace
 import Data.Maybe
+import Data.Fixed
 {-
     Assignment for COM2108 Functional Programming
     Jordan Pownall, November 2021
@@ -337,12 +339,14 @@ chooseMove (EOBoard board@(foundation, column, reserve))
     | findMoves (EOBoard board) == [] = Nothing
     | canSecondCardMove (EOBoard board) && canMoveToReserves (EOBoard board) = Just (moveForSecondCard (EOBoard board))
     | canMoveToColumn (EOBoard board) && not (emptyColumn column) = Just bestOnlyToColumn
+    | length reserve == 8 = Nothing                               --had to put in this line to stop the endless recursion... impacts score on working decks though :(
     | otherwise = Just bestAllMoves
     where
         bestOnlyToColumn = combined (shuffleBoards 123 (difColumnMoves (EOBoard board)))
         bestAllMoves = combined (shuffleBoards 123 (findMoves (EOBoard board)))
 
 -------------------------------------------------------Step 3: A FUNCTION TO PLAY A GAME OF EIGHT-OFF SOLITAIRE---------------------------------------------------------------------------------------
+-- This is a function what should return true if the game has been won (i.e. if all cards have been moved from the tableau and reserves to the foundations)
 haveWon :: Board -> Bool
 haveWon (EOBoard board@(foundation, column, reserve))
     | column == [] && reserve == [] = True
@@ -357,6 +361,28 @@ playSolitaire (EOBoard board@(foundation, column, reserve))
     | chooseMove (EOBoard board) == Nothing = foundationSize (EOBoard board)
     | otherwise = playSolitaire (fromJust (chooseMove (EOBoard board)))
 
+---------------------------------------------------------------STEP 4: A FUNCTION TO ANALYSE PERFORMANCE----------------------------------------------------------------------------------------------
+--This gets the total score of x amount of games, i.e. how many cards went to foundations in all games before the game ends
+getTotalScore :: Int -> Int -> Int
+getTotalScore seed numGames
+    | numGames > 0 = playSolitaire (eODeal (seed + numGames)) + getTotalScore seed (numGames-1)
+    | otherwise = 0
+
+--This method gets the number of wins in x random games
+getNumberWins :: Int -> Int -> Int
+getNumberWins seed numGames
+    | numGames > 0 && playSolitaire (eODeal (seed + numGames)) == 52 = 1 + getNumberWins seed (numGames-1)
+    | otherwise = 0
+
+--This method is a combination of the two above methods, uses totalScore to find the average score in x games
+analyseEO :: Int -> Int -> (Int,Int)
+analyseEO _ 0 = error "No amount of games specified"
+analyseEO seed numGames = (wins, averageScore)
+    where
+        wins = getNumberWins seed numGames
+        totalScore = getTotalScore seed numGames
+        averageScore = totalScore `div` numGames
+
 ---------------------------------------------------------------------template.hs----------------------------------------------------------------------------------------------------------------------
 
 {- Paste the contents of this file, including this comment, into your source file, below all
@@ -368,7 +394,7 @@ studentName = "Jordan Pownall"
 studentNumber = "190143099"
 studentUsername = "acb19jp"
 
-initialBoardDefined = eODeal 12345 {- replace XXX with the name of the constant that you defined
+initialBoardDefined = eODeal 12346 {- replace XXX with the name of the constant that you defined
                                                                 in step 3 of part 1 -}
 secondBoardDefined = sDeal 12345  {-replace YYY with the constant defined in step 5 of part 1,
                             or if you have chosen to demonstrate play in a different game
