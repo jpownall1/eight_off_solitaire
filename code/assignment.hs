@@ -192,9 +192,9 @@ spiderSplitUp deck
     | otherwise = take 5 deck:spiderSplitUp (drop 5 deck)
 
 --------------------------------------------------------------------------PART 2----------------------------------------------------------------------------------------------------------------------
--------------------------------------------------------Step 1: A FUNCTION TO FIND ALL POSSIBLE MOVES FOR EIGHT-OFF -----------------------------------------------------------------------------------
+-------------------------------------------------------Step 1: A FUNCTION TO FIND ALL POSSIBLE MOVES FOR EIGHT-OFF------------------------------------------------------------------------------------
 
--- This part uses functions to find the possible moves from the columns (tableau) to the reserves 
+---------------------------------This part uses functions to find the possible moves from the columns (tableau) to the reserves-----------------------------------------------------------------------
 -- checks if a card can be moved to the reserves
 canMoveToReserves :: Board -> Bool
 canMoveToReserves (EOBoard board@(_,_,reserves))
@@ -216,7 +216,7 @@ difReservesMoves (EOBoard board@(foundation, column, reserve))
     where
         boards = map (\x -> moveCardToReserves x (EOBoard board)) (getHeads column)
 
--- This part uses functions to find the possible moves from the reserves  to the columns (tableau)
+---------------------------------------This part uses functions to find the possible moves from the reserves  to the columns (tableau)----------------------------------------------------------------
 -- checks if a successor card is the head of any of the lists in the tableau
 toColumnsHelper :: [Deck] -> Card -> Bool
 toColumnsHelper column c = (sCard c) `elem` (getHeads column)
@@ -262,26 +262,35 @@ difExistColumnMoves (EOBoard board@(foundation, column, reserve))
     | otherwise = []
     where
         boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
+        king = getKingsAtColumnHead column 
 
 -- this method finds the Board array from possible moves from reserves to the columns
 -- moreBoards includes the moves to the empty columns. This is because if there is an empty column, boards throws an error.
 difColumnMoves :: Board -> [Board]
 difColumnMoves (EOBoard board@(foundation, [], reserve)) = []
 difColumnMoves (EOBoard board@(foundation, column, reserve))
-    | canMoveToColumn (EOBoard board) && emptyColumn column = removeItem (EOBoard board) boards ++ moreBoards
+    | canMoveToColumn (EOBoard board) && emptyColumn column = removeItem (EOBoard board) ([kingMove] ++ boards ++ moreBoards)
     | canMoveToColumn (EOBoard board) && not (emptyColumn column) = removeItem (EOBoard board) boards
     | otherwise = []
     where
+        kingMove = moveCardToEmptyColumn (fromJust (getKingFromList reserve)) (EOBoard board)
         boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
         moreBoards = map (\x -> moveCardToEmptyColumn x (EOBoard board)) reserve
 
--- This part is for cards moving from a column to a different column
+-------------------------------------------------------------This part is for cards moving from a column to a different column------------------------------------------------------------------------
+-- This returns the king if in a list
+getKingFromList :: Deck -> Maybe Card
+getKingFromList [] = Nothing
+getKingFromList (x:xs)
+    | isKing x = Just x
+    | otherwise = getKingFromList xs
+
 -- This returns the king at a head of a column that arent already in their own column
 getKingsAtColumnHead :: [Deck] -> Deck
 getKingsAtColumnHead [] = []
 getKingsAtColumnHead (x:xs)
     | x == [] = getKingsAtColumnHead xs
-    | (length x > 1) && isKing (head x) = [head x] ++ getKingsAtColumnHead xs
+    | (length x > 1) && isKing (head x) = head x : getKingsAtColumnHead xs
     | otherwise = getKingsAtColumnHead xs
 
 -- This method is for moving a card from a column to a different column
@@ -297,21 +306,21 @@ colToColKingMove c (EOBoard board@(foundation, x:xs, reserve))
 colToColMove :: Card -> Board -> Board
 colToColMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
 colToColMove c (EOBoard board@(foundation, x:xs, reserve))
-    | x == [] = EOBoard (newFound, x:newColumn, newReserve) 
+    | x == [] = EOBoard (newFound, x:newColumn, newReserve)
     | (length x > 1) && toColumnsHelper (x:xs) c && head x == sCard c = EOBoard (foundation, x : removeHead c (x:xs), reserve)-- checks if head of a column is second card, if so add king and delete from head of column
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)                              -- calls recursively until no more columns
     where
         EOBoard (newFound, newColumn, newReserve) = colToColKingMove c (EOBoard (foundation, xs, reserve))
 
 -- Checks if column to column moves can be made
-canMoveColtoCol :: Board -> Bool 
-canMoveColtoCol (EOBoard board@(_,column,reserve))= any isKing (getHeads column) && emptyColumn column && any (toColumnsHelper column) (getHeads column)
+canMoveColtoCol :: Board -> Bool
+canMoveColtoCol (EOBoard board@(_,column,reserve))= any isKing (getHeads column) && emptyColumn column || any (toColumnsHelper column) (getHeads column)
 
--- this method moves a king to an empty column
+-- this method is a combination of colToColMove and colToColKingMove, describes possible moves inside the columns. Ranked so the king to empty column comes first.
 difColtoColMoves :: Board -> [Board]
 difColtoColMoves (EOBoard board@(foundation, [], reserve)) = []
 difColtoColMoves (EOBoard board@(foundation, y:ys, reserve))
-    | canMoveColtoCol (EOBoard board) = removeItem (EOBoard board) (kingsToEmpty ++ otherMoves)
+    | canMoveColtoCol (EOBoard board) && any (toColumnsHelper (y:ys)) (getHeads (y:ys)) = removeItem (EOBoard board) (kingsToEmpty ++ otherMoves)
     | any isKing (getHeads (y:ys)) && emptyColumn (y:ys) = removeItem (EOBoard board) kingsToEmpty
     | any (toColumnsHelper (y:ys)) (getHeads (y:ys)) = removeItem (EOBoard board) otherMoves
     | otherwise = []
@@ -332,8 +341,8 @@ removeItem x (y:ys) | x == y    = removeItem x ys
 -- shuffleBoard is used to stop the same card switching back and forth with a column
 findMoves :: Board -> [Board]
 findMoves (EOBoard board@(foundation,column,reserves))
-    | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difColtoColMoves (EOBoard board) ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))) == [] = []
-    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difColtoColMoves (EOBoard board) ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board)))
+    | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difColtoColMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ difReservesMoves (EOBoard board))) == [] = []
+    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difColtoColMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ difReservesMoves (EOBoard board)))
 
 ---------------------------------------------------------------Step 2: A FUNCTION TO CHOOSE THE NEXT MOVE---------------------------------------------------------------------------------------------
 --I have chosen to choose which move based on which one has the biggest number of cards in foundations.
@@ -381,15 +390,11 @@ moveForSecondCard (EOBoard board@(foundation,x:xs,reserve))
 -- moves to reserves. Suffles the boards in both cases to choose a random move if the combined value is the same on a few of them.
 chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
-    | findMoves (EOBoard board) == [] = Nothing
-    | canMoveColtoCol (EOBoard board) =  Just (head (difColtoColMoves (EOBoard board)))
-    | canSecondCardMove (EOBoard board) && canMoveToReserves (EOBoard board) = Just (moveForSecondCard (EOBoard board))
-    | canMoveToColumn (EOBoard board) && not (emptyColumn column) = Just bestOnlyToColumn
     | length reserve == 8 = Nothing                               --had to put in this line to stop the endless recursion... impacts score on working decks though :(
+    | findMoves (EOBoard board) == [] = Nothing
     | otherwise = Just bestAllMoves
     where
-        bestOnlyToColumn = combined (shuffleBoards 123 (difColumnMoves (EOBoard board)))
-        bestAllMoves = combined (shuffleBoards 123 (findMoves (EOBoard board)))
+        bestAllMoves = foundationBiggest (findMoves (EOBoard board))
 
 -------------------------------------------------------Step 3: A FUNCTION TO PLAY A GAME OF EIGHT-OFF SOLITAIRE---------------------------------------------------------------------------------------
 -- This is a function what should return true if the game has been won (i.e. if all cards have been moved from the tableau and reserves to the foundations)
