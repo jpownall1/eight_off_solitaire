@@ -128,11 +128,26 @@ getHeads (x:xs)
     | x == [] = getHeads xs
     | otherwise = head x : getHeads xs
 
+-- finds second card from each list to evaluate
+getSecondHeads :: [Deck] -> Deck
+getSecondHeads [] = []
+getSecondHeads (x:xs)
+    | x == [] = getSecondHeads xs
+    | otherwise = if (isNothing (getSecondHead x)) then getSecondHeads xs else fromJust (getSecondHead x) : getSecondHeads xs
+
+-- finds second card from each list to evaluate
+getSecondHead :: Deck -> Maybe Card
+getSecondHead [] = Nothing
+getSecondHead (x:xs)
+    | xs == [] = Nothing
+    | otherwise = Just (head xs)
+
 -- removes the card from a stack if it is found at the head of any of the lists
 removeHead :: Card -> [Deck] -> [Deck]
 removeHead c [] = []
 removeHead c [a] = []
 removeHead c (x:xs)
+    | x == [] = x:removeHead c xs
     | c == head x = removeItem c x : xs                    -- if c is at the head of this list, delete
     | otherwise = x:removeHead c xs               -- if not, repeat process for rest of the list until found
 
@@ -153,8 +168,30 @@ moveCardFoundations c (EOBoard board@(x:xs, column, reserve))
     where
         (EOBoard (newFound, newColumn, newReserve)) = moveCardFoundations c (EOBoard (xs, column, reserve))
 
+----------------------------------------------------------------------STEP 6: ONE FINAL FUNCTION------------------------------------------------------------------------------------------------------
+-- function to initially split the deck into column, which is just the first 54 cards split up into sets of 6x4 and 5x6
+-- and the rest of the 50 cards are put into stock
+-- basically sets up (deals) a new game
+
+sDeal :: Int -> Board
+sDeal n = SBoard (foundation, column, stock) where
+    shuffledDeck = shuffle n ++ shuffle (n+1)                     --shuffle cards using seed n
+    foundation = []                                               --initialises empty array for foundation
+    column = spiderSplitUp (take 54 shuffledDeck)                        --splits the remaining cards into 8 equal lists for tableau
+    stock = drop 54 shuffledDeck                                 --takes the 4 first random cards from shuffled deck for reserve list
+
+-- Splits remaining cards (not in reserves) into 6 equal piles in tableau using recursion taking
+-- 6 cards a time from input 'deck' for 8 lists in tabeleau
+spiderSplitUp :: Deck -> [Deck]
+sipiderSplitUp [] = []
+spiderSplitUp deck
+    | length deck < 5 = []
+    | length deck > 30 = take 6 deck:spiderSplitUp (drop 6 deck) -- recursively calls to split up deck into 6 every time until empty set
+    | otherwise = take 5 deck:spiderSplitUp (drop 5 deck)
+
 --------------------------------------------------------------------------PART 2----------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------Step 1: A FUNCTION TO FIND ALL POSSIBLE MOVES FOR EIGHT-OFF -----------------------------------------------------------------------------------
+
 -- This part uses functions to find the possible moves from the columns (tableau) to the reserves 
 -- checks if a card can be moved to the reserves
 canMoveToReserves :: Board -> Bool
@@ -182,9 +219,17 @@ difReservesMoves (EOBoard board@(foundation, column, reserve))
 toColumnsHelper :: [Deck] -> Card -> Bool
 toColumnsHelper column c = (sCard c) `elem` (getHeads column)
 
+-- This function checks if any of the columns are empty, if so, cards can move from reserves to columns
+emptyColumn :: [Deck] -> Bool
+emptyColumn [] = False
+emptyColumn (x:xs)
+    | x == [] = True
+    | otherwise = emptyColumn xs
+
 -- checks if a card can be moved to the tableau
 canMoveToColumn :: Board -> Bool
 canMoveToColumn (EOBoard (_,column,reserve))
+    | emptyColumn column = True
     | any (toColumnsHelper column) reserve = True
     | otherwise = False
 
@@ -192,20 +237,41 @@ canMoveToColumn (EOBoard (_,column,reserve))
 moveCardToColumn :: Card -> Board -> Board
 moveCardToColumn c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as you should be able to move all cards to column then
 moveCardToColumn c (EOBoard board@(foundation, x:xs, reserve))
+    | x == [] = EOBoard (newFound, x:newColumn, newReserve)
     | head x == sCard c = EOBoard (foundation, (c:x):xs, removeItem c reserve) -- checks if head of a column is the sCard of c, if so add c
-    | x == [] = EOBoard (foundation, (c:x):xs, removeItem c reserve)           -- checks if head of a column is empty, if so add c
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)                  -- calls recursively if the sCard is not found at the head of that column
     where
         EOBoard (newFound, newColumn, newReserve) = moveCardToColumn c (EOBoard (foundation, xs, reserve))
 
--- this method finds the Board array from possible moves from columns to the reserves
-difColumnMoves :: Board -> [Board]
-difColumnMoves (EOBoard board@(foundation, [], reserve)) = []
-difColumnMoves (EOBoard board@(foundation, column, reserve))
-    | canMoveToColumn (EOBoard board) = removeItem (EOBoard board) boards
+-- moves a card to the tableau and deletes it from the reserves
+moveCardToEmptyColumn :: Card -> Board -> Board
+moveCardToEmptyColumn c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as you should be able to move all cards to column then
+moveCardToEmptyColumn c (EOBoard board@(foundation, x:xs, reserve))
+    | x == [] = EOBoard (foundation, (c:x):xs, removeItem c reserve)           -- checks if head of a column is empty, if so add c
+    | otherwise = EOBoard (newFound, x:newColumn, newReserve)                  -- calls recursively if the sCard is not found at the head of that column
+    where
+        EOBoard (newFound, newColumn, newReserve) = moveCardToEmptyColumn c (EOBoard (foundation, xs, reserve))
+
+-- this method finds the Board array from possible moves from reserves to non empty columns
+difExistColumnMoves :: Board -> [Board]
+difExistColumnMoves (EOBoard board@(foundation, [], reserve)) = []
+difExistColumnMoves (EOBoard board@(foundation, column, reserve))
+    | canMoveToColumn (EOBoard board) && not (emptyColumn column) = removeItem (EOBoard board) boards
     | otherwise = []
     where
         boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
+
+-- this method finds the Board array from possible moves from reserves to the columns
+-- moreBoards includes the moves to the empty columns. This is because if there is an empty column, boards throws an error.
+difColumnMoves :: Board -> [Board]
+difColumnMoves (EOBoard board@(foundation, [], reserve)) = []
+difColumnMoves (EOBoard board@(foundation, column, reserve))
+    | canMoveToColumn (EOBoard board) && emptyColumn column = removeItem (EOBoard board) boards ++ moreBoards
+    | canMoveToColumn (EOBoard board) && not (emptyColumn column) = removeItem (EOBoard board) boards
+    | otherwise = []
+    where
+        boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
+        moreBoards = map (\x -> moveCardToEmptyColumn x (EOBoard board)) reserve
 
 --This method is for filtering, used in many functions
 removeItem :: Eq a => a -> [a] -> [a]
@@ -220,7 +286,7 @@ removeItem x (y:ys) | x == y    = removeItem x ys
 findMoves :: Board -> [Board]
 findMoves (EOBoard board@(foundation,column,reserves))
     | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))) == [] = []
-    | otherwise = shuffleBoards 1234 (removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board))))
+    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difReservesMoves (EOBoard board) ++ difColumnMoves (EOBoard board)))
 
 ---------------------------------------------------------------Step 2: A FUNCTION TO CHOOSE THE NEXT MOVE---------------------------------------------------------------------------------------------
 --I have chosen to choose which move based on which one has the biggest number of cards in foundations.
@@ -247,13 +313,34 @@ reserveSmallest = foldr1 (\x y -> if reserveSize x <= reserveSize y then x else 
 combined :: [Board] -> Board
 combined = foldr1 (\x y -> if (foundationSize x - reserveSize x) >= (foundationSize y - reserveSize y) then x else y)
 
---This method chooses the move dependant on the above method
+--The following 2 methods are to check if any of the next cards in any of the columns can move, if so, move the head to reserves then call to foundations
+--This method checks if any of the second head cards in the tableau can move to the foundations
+canSecondCardMove :: Board -> Bool
+canSecondCardMove (EOBoard board@(foundation, [], [])) = False
+canSecondCardMove (EOBoard board@(foundation, column, _)) = any (toFoundationsHelper foundation) (getSecondHeads column)
+
+-- This is a method to choose a card to move from column to the reserves if the card before the head is a s card of any in the foundations
+moveForSecondCard :: Board -> Board
+moveForSecondCard (EOBoard board@(foundation,[],[])) = EOBoard board
+moveForSecondCard (EOBoard board@(foundation,[],_)) = EOBoard board
+moveForSecondCard (EOBoard board@(foundation,x:xs,reserve))
+    | length x > 2 && toFoundationsHelper foundation (fromJust (getSecondHead x)) && canMoveToReserves (EOBoard board) = toFoundations (moveCardToReserves (head x) (EOBoard board))
+    | otherwise = EOBoard (newFound, x:newColumn, newReserve)    -- calls recursively if the second card in that column is not found to be able to move to foundations
+    where
+        (EOBoard (newFound, newColumn, newReserve)) = moveForSecondCard (EOBoard (foundation, xs, reserve))
+
+
+-- This method chooses the move dependant on the above method, first only uses moves from reserves to columns, then if not considers
+-- moves to reserves. Suffles the boards in both cases to choose a random move if the combined value is the same on a few of them.
 chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
     | findMoves (EOBoard board) == [] = Nothing
-    | otherwise = Just toChoose
+    | canSecondCardMove (EOBoard board) && canMoveToReserves (EOBoard board) = Just (moveForSecondCard (EOBoard board))
+    | canMoveToColumn (EOBoard board) && not (emptyColumn column) = Just bestOnlyToColumn
+    | otherwise = Just bestAllMoves
     where
-        toChoose = combined (findMoves (EOBoard board))
+        bestOnlyToColumn = combined (shuffleBoards 123 (difColumnMoves (EOBoard board)))
+        bestAllMoves = combined (shuffleBoards 123 (findMoves (EOBoard board)))
 
 -------------------------------------------------------Step 3: A FUNCTION TO PLAY A GAME OF EIGHT-OFF SOLITAIRE---------------------------------------------------------------------------------------
 haveWon :: Board -> Bool
@@ -281,9 +368,9 @@ studentName = "Jordan Pownall"
 studentNumber = "190143099"
 studentUsername = "acb19jp"
 
-initialBoardDefined = eODeal 12345    {- replace XXX with the name of the constant that you defined
+initialBoardDefined = eODeal 12345 {- replace XXX with the name of the constant that you defined
                                                                 in step 3 of part 1 -}
-{-secondBoardDefined = SBoard (Foundation, Column, Stock)  replace YYY with the constant defined in step 5 of part 1,
+secondBoardDefined = sDeal 12345  {-replace YYY with the constant defined in step 5 of part 1,
                             or if you have chosen to demonstrate play in a different game
                             of solitaire for part 2, a suitable contstant that will show
                             your play to good effect for that game -}
@@ -333,7 +420,7 @@ main =
         score <- displayGame initialBoardDefined 0
         putStrLn $ "Score: " ++ score
         putStrLn $ "and if I'd used playSolitaire, I would get score: " ++ show (playSolitaire initialBoardDefined)
-{- start comment marker - move this if appropriate
+
 
         putStrLn "\n\n\n************\nNow looking at the alternative game:"
 
@@ -341,7 +428,7 @@ main =
         print secondBoardDefined          -- show the suitable constant. For spider solitaire this
                                         -- is not an initial game, but a point from which the game
                                         -- can be won
-
+{- start comment marker - move this if appropriate
         putStrLn "***Now showing a full game for alternative solitaire"
         score <- displayGame secondBoardDefined 0 -- see what happens when we play that game (assumes chooseMove
                                                 -- works correctly)
