@@ -296,7 +296,7 @@ getKingsAtColumnHead (x:xs)
 colToColKingMove :: Card -> Board -> Board
 colToColKingMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
 colToColKingMove c (EOBoard board@(foundation, x:xs, reserve))
-    | x == [] = EOBoard (foundation, (c:x) : removeHead c xs, reserve)           -- checks if head of a column is empty, if so add king and delete from head of column
+    | x == [] && isKing c = EOBoard (foundation, (c:x) : removeHead c xs, reserve)           -- checks if head of a column is empty, if so add king and delete from head of column
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)                  -- calls recursively until no more columns
     where
         EOBoard (newFound, newColumn, newReserve) = colToColKingMove c (EOBoard (foundation, xs, reserve))
@@ -305,6 +305,7 @@ colToColKingMove c (EOBoard board@(foundation, x:xs, reserve))
 colToColMove :: Card -> Board -> Board
 colToColMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
 colToColMove c (EOBoard board@(foundation, x:xs, reserve))
+    | x == [] && isKing c = colToColKingMove c (EOBoard board)
     | x == [] = EOBoard (newFound, x:newColumn, newReserve)
     | (length x > 1) && toColumnsHelper (x:xs) c && head x == sCard c = EOBoard (foundation, (c:x) : removeHead c newColumn, reserve)-- checks if head of a column is second card, if so add king and delete from head of column
     | (length x > 1) && toColumnsHelper (x:xs) c && c `elem` x = EOBoard (newFound, (delete c x):newColumn, newReserve)
@@ -334,6 +335,12 @@ removeItem :: Eq a => a -> [a] -> [a]
 removeItem _ []                 = []
 removeItem x (y:ys) | x == y    = removeItem x ys
                     | otherwise = y : removeItem x ys
+
+--This method is for filtering, used in many functions
+removeItems :: Eq a => [a] -> [a] -> [a]
+removeItems _ []                 = []
+removeItems [] a                 = a
+removeItems (x:xs) list          = removeItem x (removeItems xs list)
 
 -- This part is the combination of the difColumnMoves and difReservesMoves. 
 -- This method finds all the possible moves in the game, with toFoundations called on each of the boards as instructed
@@ -390,11 +397,7 @@ moveForSecondCard (EOBoard board@(foundation,x:xs,reserve))
     where
         (EOBoard (newFound, newColumn, newReserve)) = moveForSecondCard (EOBoard (foundation, xs, reserve))
 
--- all the moves for trying to move a card out the way to move the second card to foundations
-secondCardMoves :: Board -> [Board]
-secondCardMoves (EOBoard board@(foundation,column,reserve)) = removeItem (EOBoard board) (map (\x -> colToColKingMove x (EOBoard board)) (getSecondHeads column))
-
--- This is to be removed from the allMoves as it is a good idea to keep a king at the tail of a column
+-- This is to be removed from the allMoves in chooseMove as it is a good idea to keep a king in an empty column if possible.
 findKingToRes :: Board -> Board
 findKingToRes (EOBoard board@(foundation, [], reserve)) = EOBoard board
 findKingToRes (EOBoard board@(foundation, x:xs, reserve))
@@ -403,6 +406,24 @@ findKingToRes (EOBoard board@(foundation, x:xs, reserve))
     where
         (EOBoard (newFound, newColumn, newRes)) = findKingToRes (EOBoard (foundation, xs, reserve))
 
+-- finds heads from each what has a successor card behind it
+getImmovableHeads :: [Deck] -> Deck
+getImmovableHeads [] = []
+getImmovableHeads (x:xs)
+    | x == [] = getImmovableHeads xs
+    | length x > 1 && sCard (head x) == fromJust (getSecondHead x) = head x : getImmovableHeads xs
+    | otherwise = getImmovableHeads xs
+
+-- This is to be removed from all the moves in chooseMove, as this is the boards what move a card to the reserves when they have a 
+-- successor card behind them
+findWrongCardsToRes :: Board -> [Board]
+findWrongCardsToRes (EOBoard board@(foundation, [], reserve)) = [toFoundations (EOBoard board)]
+findWrongCardsToRes (EOBoard board@(foundation, column, reserve))
+    | canMoveToReserves (EOBoard board) = removeItem (EOBoard board) boards
+    | otherwise = []
+    where
+        boards = map (\x -> moveCardToReserves x (EOBoard board)) (getImmovableHeads column)
+
 
 -- This method chooses the move dependant on the above method, first only uses moves from reserves to columns, then if not considers
 -- moves to reserves. Suffles the boards in both cases to choose a random move if the combined value is the same on a few of them.
@@ -410,12 +431,13 @@ chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
     | allMoves == [] = Nothing
     | length reserve == 8 = Nothing
-    | canSecondCardMove (EOBoard board) && secondCardMoves (EOBoard board) /= [] = Just (head (secondCardMoves (EOBoard board)))
+    | canSecondCardMove (EOBoard board) && moveForSecondCard (EOBoard board) /= (EOBoard board) = Just (moveForSecondCard (EOBoard board))
     | otherwise = Just bestAllMoves
     where
         allMoves = findMoves (EOBoard board)
         toRemove = findKingToRes (EOBoard board)
-        bestAllMoves = foundationBiggest (removeItem toRemove allMoves)
+        toRemove' = findWrongCardsToRes (EOBoard board)
+        bestAllMoves = foundationBiggest (removeItems toRemove' (removeItem toRemove allMoves))
 
 -------------------------------------------------------Step 3: A FUNCTION TO PLAY A GAME OF EIGHT-OFF SOLITAIRE---------------------------------------------------------------------------------------
 -- This is a function what should return true if the game has been won (i.e. if all cards have been moved from the tableau and reserves to the foundations)
@@ -466,7 +488,7 @@ studentName = "Jordan Pownall"
 studentNumber = "190143099"
 studentUsername = "acb19jp"
 
-initialBoardDefined = eODeal 12345 {- replace XXX with the name of the constant that you defined
+initialBoardDefined = eODeal 123 {- replace XXX with the name of the constant that you defined
                                                                 in step 3 of part 1 -}
 secondBoardDefined = sDeal 12345  {-replace YYY with the constant defined in step 5 of part 1,
                             or if you have chosen to demonstrate play in a different game
