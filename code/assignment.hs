@@ -147,7 +147,6 @@ getSecondHead (x:xs)
 -- removes the card from a stack if it is found at the head of any of the lists
 removeHead :: Card -> [Deck] -> [Deck]
 removeHead c [] = []
-removeHead c [a] = []
 removeHead c (x:xs)
     | x == [] = x:removeHead c xs
     | c == head x = removeItem c x : xs                    -- if c is at the head of this list, delete
@@ -297,7 +296,7 @@ getKingsAtColumnHead (x:xs)
 colToColKingMove :: Card -> Board -> Board
 colToColKingMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
 colToColKingMove c (EOBoard board@(foundation, x:xs, reserve))
-    | x == [] = EOBoard (foundation, x : removeHead c (x:xs), reserve)           -- checks if head of a column is empty, if so add king and delete from head of column
+    | x == [] = EOBoard (foundation, (c:x) : removeHead c xs, reserve)           -- checks if head of a column is empty, if so add king and delete from head of column
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)                  -- calls recursively until no more columns
     where
         EOBoard (newFound, newColumn, newReserve) = colToColKingMove c (EOBoard (foundation, xs, reserve))
@@ -306,17 +305,18 @@ colToColKingMove c (EOBoard board@(foundation, x:xs, reserve))
 colToColMove :: Card -> Board -> Board
 colToColMove c (EOBoard board@(foundation, [], reserve)) = EOBoard board   --if the tableau is empty then just return board as no moves can be made for this method
 colToColMove c (EOBoard board@(foundation, x:xs, reserve))
-    | x == [] = EOBoard (newFound, x:newColumn, newReserve)
-    | (length x > 1) && toColumnsHelper (x:xs) c && head x == sCard c = EOBoard (foundation, x : removeHead c (x:xs), reserve)-- checks if head of a column is second card, if so add king and delete from head of column
+    | x == [] = EOBoard (newFound, x:newColumn, newReserve) 
+    | (length x > 1) && toColumnsHelper (x:xs) c && head x == sCard c = EOBoard (foundation, (c:x) : removeHead c newColumn, reserve)-- checks if head of a column is second card, if so add king and delete from head of column
+    | (length x > 1) && toColumnsHelper (x:xs) c && c `elem` x = EOBoard (newFound, (delete c x):newColumn, newReserve)  
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)                              -- calls recursively until no more columns
     where
-        EOBoard (newFound, newColumn, newReserve) = colToColKingMove c (EOBoard (foundation, xs, reserve))
+        EOBoard (newFound, newColumn, newReserve) = colToColMove c (EOBoard (foundation, xs, reserve))
 
 -- Checks if column to column moves can be made
 canMoveColtoCol :: Board -> Bool
-canMoveColtoCol (EOBoard board@(_,column,reserve))= any isKing (getHeads column) && emptyColumn column || any (toColumnsHelper column) (getHeads column)
+canMoveColtoCol (EOBoard board@(_,column,reserve))= (any isKing (getHeads column) && emptyColumn column) || any (toColumnsHelper column) (getHeads column)
 
--- this method is a combination of colToColMove and colToColKingMove, describes possible moves inside the columns. Ranked so the king to empty column comes first.
+-- this method is a combination of colToColMove and colToColKingMove, describes possible moves inside the columns. Ranked on purpose so the king to empty column comes first.
 difColtoColMoves :: Board -> [Board]
 difColtoColMoves (EOBoard board@(foundation, [], reserve)) = []
 difColtoColMoves (EOBoard board@(foundation, y:ys, reserve))
@@ -342,7 +342,9 @@ removeItem x (y:ys) | x == y    = removeItem x ys
 findMoves :: Board -> [Board]
 findMoves (EOBoard board@(foundation,column,reserves))
     | removeItem (EOBoard board) (map toFoundations ([(EOBoard board)] ++ difColtoColMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ difReservesMoves (EOBoard board))) == [] = []
-    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difColtoColMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ difReservesMoves (EOBoard board)))
+    | otherwise = removeItem (EOBoard board) (map toFoundations ([EOBoard board] ++ difColtoColMoves (EOBoard board) ++ difColumnMoves (EOBoard board) ++ shuffledToReserveMoves))
+    where
+        shuffledToReserveMoves = (difReservesMoves (EOBoard board))
 
 ---------------------------------------------------------------Step 2: A FUNCTION TO CHOOSE THE NEXT MOVE---------------------------------------------------------------------------------------------
 --I have chosen to choose which move based on which one has the biggest number of cards in foundations.
@@ -380,10 +382,13 @@ moveForSecondCard :: Board -> Board
 moveForSecondCard (EOBoard board@(foundation,[],[])) = EOBoard board
 moveForSecondCard (EOBoard board@(foundation,[],_)) = EOBoard board
 moveForSecondCard (EOBoard board@(foundation,x:xs,reserve))
-    | length x > 2 && toFoundationsHelper foundation (fromJust (getSecondHead x)) && canMoveToReserves (EOBoard board) = toFoundations (moveCardToReserves (head x) (EOBoard board))
+    | length x > 2 && toFoundationsHelper foundation (fromJust (getSecondHead x)) && canMoveToReserves (EOBoard board) = toFoundations (moveCardToReserves (head x) (toFoundations (EOBoard board)))
+    | length x > 2 && toFoundationsHelper foundation (fromJust (getSecondHead x)) && (colToColMove (head x) (EOBoard board)) /= EOBoard board = toFoundations (colToColMove (head x) (EOBoard board))
     | otherwise = EOBoard (newFound, x:newColumn, newReserve)    -- calls recursively if the second card in that column is not found to be able to move to foundations
     where
         (EOBoard (newFound, newColumn, newReserve)) = moveForSecondCard (EOBoard (foundation, xs, reserve))
+
+-- This method stops infinite loop
 
 
 -- This method chooses the move dependant on the above method, first only uses moves from reserves to columns, then if not considers
@@ -392,6 +397,7 @@ chooseMove :: Board -> Maybe Board
 chooseMove (EOBoard board@(foundation, column, reserve))
     | length reserve == 8 = Nothing                               --had to put in this line to stop the endless recursion... impacts score on working decks though :(
     | findMoves (EOBoard board) == [] = Nothing
+    | canSecondCardMove (EOBoard board) = Just (moveForSecondCard (EOBoard board))
     | otherwise = Just bestAllMoves
     where
         bestAllMoves = foundationBiggest (findMoves (EOBoard board))
@@ -445,7 +451,7 @@ studentName = "Jordan Pownall"
 studentNumber = "190143099"
 studentUsername = "acb19jp"
 
-initialBoardDefined = eODeal 12346 {- replace XXX with the name of the constant that you defined
+initialBoardDefined = eODeal 123 {- replace XXX with the name of the constant that you defined
                                                                 in step 3 of part 1 -}
 secondBoardDefined = sDeal 12345  {-replace YYY with the constant defined in step 5 of part 1,
                             or if you have chosen to demonstrate play in a different game
