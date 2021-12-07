@@ -397,20 +397,12 @@ moveForSecondCard (EOBoard board@(foundation,x:xs,reserve))
     where
         (EOBoard (newFound, newColumn, newReserve)) = moveForSecondCard (EOBoard (foundation, xs, reserve))
 
--- This is to be removed from the allMoves in chooseMove as it is a good idea to keep a king in an empty column if possible.
-findKingToRes :: Board -> Board
-findKingToRes (EOBoard board@(foundation, [], reserve)) = EOBoard board
-findKingToRes (EOBoard board@(foundation, x:xs, reserve))
-    | length x > 0 && length x < 2 && isKing (head x) = moveCardToReserves (head x) (EOBoard board)
-    | otherwise = EOBoard (newFound, x:newColumn, newRes)
-    where
-        (EOBoard (newFound, newColumn, newRes)) = findKingToRes (EOBoard (foundation, xs, reserve))
-
 -- finds heads from each what has a successor card behind it
 getImmovableHeads :: [Deck] -> Deck
 getImmovableHeads [] = []
 getImmovableHeads (x:xs)
     | x == [] = getImmovableHeads xs
+    | length x > 0 && length x < 2 && isKing (head x) = head x : getImmovableHeads xs
     | length x > 1 && sCard (head x) == fromJust (getSecondHead x) = head x : getImmovableHeads xs
     | otherwise = getImmovableHeads xs
 
@@ -432,12 +424,12 @@ chooseMove (EOBoard board@(foundation, column, reserve))
     | allMoves == [] = Nothing
     | length reserve == 8 = Nothing
     | canSecondCardMove (EOBoard board) && moveForSecondCard (EOBoard board) /= (EOBoard board) = Just (moveForSecondCard (EOBoard board))
+    | bestAllMoves == (EOBoard board) = Nothing
     | otherwise = Just bestAllMoves
     where
         allMoves = findMoves (EOBoard board)
-        toRemove = findKingToRes (EOBoard board)
-        toRemove' = findWrongCardsToRes (EOBoard board)
-        bestAllMoves = foundationBiggest (removeItems toRemove' (removeItem toRemove allMoves))
+        toRemove = findWrongCardsToRes (EOBoard board)
+        bestAllMoves = if (removeItems toRemove allMoves) == [] then EOBoard board else foundationBiggest (removeItems toRemove allMoves)
 
 -------------------------------------------------------Step 3: A FUNCTION TO PLAY A GAME OF EIGHT-OFF SOLITAIRE---------------------------------------------------------------------------------------
 -- This is a function what should return true if the game has been won (i.e. if all cards have been moved from the tableau and reserves to the foundations)
@@ -459,7 +451,7 @@ playSolitaire (EOBoard board@(foundation, column, reserve))
 --This gets the total score of x amount of games, i.e. how many cards went to foundations in all games before the game ends
 getTotalScore :: Int -> Int -> Int
 getTotalScore seed numGames
-    | numGames > 0 = (playSolitaire (eODeal (seed + numGames)) + getTotalScore seed (numGames-1)) `div` numGames
+    | numGames > 0 = (playSolitaire (eODeal (seed + numGames)) + getTotalScore seed (numGames-1))
     | otherwise = 0
 
 --This method gets the number of wins in x random games
@@ -488,7 +480,7 @@ studentName = "Jordan Pownall"
 studentNumber = "190143099"
 studentUsername = "acb19jp"
 
-initialBoardDefined = eODeal 123 {- replace XXX with the name of the constant that you defined
+initialBoardDefined = eODeal 118 {- replace XXX with the name of the constant that you defined
                                                                 in step 3 of part 1 -}
 secondBoardDefined = sDeal 12345  {-replace YYY with the constant defined in step 5 of part 1,
                             or if you have chosen to demonstrate play in a different game
