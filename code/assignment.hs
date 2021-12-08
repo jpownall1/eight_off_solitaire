@@ -466,7 +466,7 @@ studentNumber = "190143099"
 studentUsername = "acb19jp"
 
 initialBoardDefined :: Board
-initialBoardDefined = eODeal 118
+initialBoardDefined = eODeal 1234
 
 secondBoardDefined :: Board
 secondBoardDefined = sDeal 12345 
