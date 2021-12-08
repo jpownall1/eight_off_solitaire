@@ -64,7 +64,7 @@ isKing x = snd x == King               --checks for Pip value in card tuple, use
 isAce :: Card -> Bool
 isAce x = snd x == Ace                 --checks for Pip value in card tuple, uses deriving Eq to check if it is an Ace
 
------------------------------------------The following methods are helpful methods used all throughout the code---------------------------------------------------------------------------------------
+------------------------------------------------------------------------------More Utilities-----------------------------------------------------------------------------------------------------------
 
 -- This is a method used for comparisons. It helps with the following two methods, for shuffling
 cmp (x1,y1) (x2,y2) = compare y1 y2
@@ -72,10 +72,6 @@ cmp (x1,y1) (x2,y2) = compare y1 y2
 -- This method shuffles a deck dependent a user defined seed
 shuffle :: Int -> Deck
 shuffle n = [card | (card,n) <- sortBy cmp (zip pack (randoms (mkStdGen n) :: [Int]))]
-
--- This method shuffles a list of boards dependent a user defined seed
-shuffleBoards :: Int -> [Board] -> [Board]
-shuffleBoards n boards = [board | (board,n) <- sortBy cmp (zip boards (randoms (mkStdGen n) :: [Int]))]
 
 -- finds card heads from each list in a list of lists to evaluate
 getHeads :: [Deck] -> Deck
@@ -142,15 +138,15 @@ eODeal n = EOBoard (foundation, column, reserve) where
     shuffledDeck = shuffle n                     --shuffle cards using seed n
     foundation = []                              --initialises empty array for foundation
     reserve = take 4 shuffledDeck                --takes the 4 first random cards from shuffled deck for reserve list
-    column = splitUp (drop 4 shuffledDeck)       --splits the remaining cards into 8 equal lists for tableau
+    column = splitUpEO (drop 4 shuffledDeck)       --splits the remaining cards into 8 equal lists for tableau
 
 {- Splits remaining cards (not in reserves) into 6 equal piles in tableau using recursion taking
    6 cards a time from input 'deck' for 8 lists in tabeleau -}
-splitUp :: Deck -> Column
-splitUp [] = []
-splitUp deck
+splitUpEO :: Deck -> Column
+splitUpEO [] = []
+splitUpEO deck
     | length deck < 6 = []
-    | otherwise = take 6 deck:splitUp (drop 6 deck) -- recursively calls to split up deck into 6 every time until empty set
+    | otherwise = take 6 deck:splitUpEO (drop 6 deck) -- recursively calls to split up deck into 6 every time until empty set
 
 -------------------------------The following 5 methods are for moving cards to foundations from the reserves or the tableau---------------------------------------------------------------------------
 
@@ -278,15 +274,6 @@ moveKingToEmptyColumn c (EOBoard board@(foundation, x:xs, reserve))
     where
         EOBoard (newFound, newColumn, newReserve) = moveKingToEmptyColumn c (EOBoard (foundation, xs, reserve))
 
-{- this method finds the Board array from possible moves from reserves to non empty columns -}
-difExistColumnMoves :: Board -> [Board]
-difExistColumnMoves (EOBoard board@(foundation, [], reserve)) = []
-difExistColumnMoves (EOBoard board@(foundation, column, reserve))
-    | canMoveToColumn (EOBoard board) && not (emptyColumn column) = removeItem (EOBoard board) boards
-    | otherwise = []
-    where
-        boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve
-
 {- this method finds the Board array from possible moves from reserves to the columns moreBoards includes
    the moves to the empty columns. This is because if there is an empty column, boards throws an error -}
 difColumnMoves :: Board -> [Board]
@@ -297,7 +284,7 @@ difColumnMoves (EOBoard board@(foundation, column, reserve))
     | otherwise = []
     where
         kingMove = if isNothing (getKingFromList reserve) then EOBoard board else moveKingToEmptyColumn (fromJust (getKingFromList reserve)) (EOBoard board)  -- moves from king to empty
-        boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve                                       -- all other moves to columns                                                         
+        boards = map (\x -> moveCardToColumn x (EOBoard board)) reserve                                                                                       -- all other moves to columns                                                         
 
 -------------------------------------------------------------This part is for cards moving from a column to a different column------------------------------------------------------------------------
 -- This returns the first instance of a king if in a list. Useful for reserves -> columns and columns -> columns
